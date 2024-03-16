@@ -1,11 +1,13 @@
 pragma solidity ^0.8.9;
 
 import "./lib/SuaveContract.sol";
-// import "solady/src/utils/LibString.sol";
 import "lib/solady/src/utils/LibString.sol";
+import "lib/solady/src/utils/JSONParserLib.sol";
 
+import "../lib/forge-std/src/Test.sol"; // todo: rm for prod
 
-contract VickyLVRHookup is SuaveContract {
+contract Auction is SuaveContract {
+    using JSONParserLib for *;
 
     // todo: use storage to indentify an auction (set id and map details to it) (smaller events) eg. pool hash
 
@@ -40,8 +42,9 @@ contract VickyLVRHookup is SuaveContract {
     string public settlementChainRpc;
     address public internalWallet;
     uint64 public lastAuctionBlock;
-    bool internal isInitialized;
+    bool public isInitialized;
     Suave.DataId internal pkBidId;
+    address[] public genericPeekers = [0xC8df3686b4Afb2BB53e60EAe97EF043FE03Fb829]; // todo: rm after new update (this exposes to anyone)
 
 
     // ⛓️ EVM Methods
@@ -80,7 +83,7 @@ contract VickyLVRHookup is SuaveContract {
 
     // 🤐 MEVM Methods
 
-    function confidentialConstructor() external onlyConfidential returns (bytes memory) {
+    function confidentialConstructor() external returns (bytes memory) {
         crequire(!isInitialized, "Already initialized");
 
         string memory pk = Suave.privateKeyGen(Suave.CryptoSignature.SECP256);
@@ -117,7 +120,7 @@ contract VickyLVRHookup is SuaveContract {
         uint bidAmount
     ) public view returns (bool) {
         bytes memory callData = abi.encodeWithSignature(
-            "hasSufficientFundsToPayforOrdering",
+            "hasSufficientFundsToPayforOrdering(address,bytes32,address,address,uint256)",
             pool,
             poolId,
             user, 
@@ -125,19 +128,24 @@ contract VickyLVRHookup is SuaveContract {
             bidAmount
         );
         string memory callParam = string(abi.encodePacked(
-            '{"to": "', address(registry), 
-            '","data": "', LibString.toHexString(callData),
-            ',}'
+            '{"to": "', LibString.toHexStringChecksummed(registry), 
+            '","data": "', LibString.toHexString(callData),'"}'
         ));
         bytes memory response = eth_call(callParam);
-        return abi.decode(response, (bool));
+
+        JSONParserLib.Item memory parsedRes = string(response).parse();
+        string memory result = string(parsedRes.at('"result"').value());
+        console.log(result);
+        bool boolRes = LibString.endsWith(result, '1"'); // todo there is a better way
+
+        return boolRes;
     }
 
     function eth_call(string memory callParam) public view returns (bytes memory) {
         bytes memory body = abi.encodePacked(
-            '{"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":["', 
-            callParam, 
-            '"],"id":1}'
+            '{"jsonrpc":"2.0","method":"eth_call","params":[', 
+            callParam, ', "latest"'
+            '],"id":1}'
         );
         /* solhint-enable */
         Suave.HttpRequest memory request;
@@ -152,13 +160,15 @@ contract VickyLVRHookup is SuaveContract {
 
     function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
         (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
+        console.log(success);
+        console.logBytes(data);
         crequire(success, string(data));
         return abi.decode(data, (bytes));
     }
 
     function settleAuction(address pool, bytes32 poolId, uint64 blockNumber) public returns (bytes memory) {
         // todo: condition to check if the auction should be over
-        Bid[] memory bids = fetchBids(poolId, blockNumber);
+        Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
         (Bid memory winningBid) = bids.length == 0
             ? Bid(pool, poolId, blockNumber, address(0), 0)
             : findWinningBid(bids);
@@ -174,7 +184,14 @@ contract VickyLVRHookup is SuaveContract {
 
     function signBid(Bid memory bid) public returns (bytes memory sig) {
         string memory pk = retreivePK();
-        sig = Suave.signMessage(abi.encode(bid), Suave.CryptoSignature.SECP256, pk);
+        // console.log(bid.pool);
+        // console.logBytes32(bid.poolId);
+        // console.log(uint(bid.blockNumber));
+        // console.log(bid.bidAmount);
+        bytes32 digest = keccak256(abi.encode(bid));
+        console.log("here");
+        console.logBytes32(digest);
+        sig = Suave.signMessage(abi.encodePacked(digest), Suave.CryptoSignature.SECP256, pk);
     }
 
     function findWinningBid(Bid[] memory bids) internal pure returns (Bid memory bestBid) {
@@ -196,23 +213,29 @@ contract VickyLVRHookup is SuaveContract {
     }
 
     function storeBid(Bid memory bid) internal {
-        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, bid.poolId));
+        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, bid.pool, bid.poolId));
         address[] memory peekers = new address[](3);
         peekers[0] = address(this);
 		peekers[1] = Suave.FETCH_DATA_RECORDS;
 		peekers[2] = Suave.CONFIDENTIAL_RETRIEVE;
-		Suave.DataRecord memory secretBid = Suave.newDataRecord(bid.blockNumber, peekers, peekers, namespace);
+		Suave.DataRecord memory secretBid = Suave.newDataRecord(bid.blockNumber, genericPeekers, genericPeekers, namespace);
 		Suave.confidentialStore(secretBid.id, namespace, abi.encode(bid));
     }
 
-    function fetchBids(bytes32 pool, uint64 blockNumber) internal returns (Bid[] memory bids){
-        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, pool));
+    function fetchBids(
+        address pool, 
+        bytes32 poolId, 
+        uint64 blockNumber
+    ) public returns (Bid[] memory){
+        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, pool, poolId));
         Suave.DataRecord[] memory dataRecords = Suave.fetchDataRecords(blockNumber, namespace);
+        Bid[] memory bids = new Bid[](dataRecords.length);
         for (uint i = 0; i < dataRecords.length; i++) {
             bytes memory bidBytes = Suave.confidentialRetrieve(dataRecords[i].id, namespace);
             Bid memory bid = abi.decode(bidBytes, (Bid));
-            bids[i] = bid; 
+            bids[i] = bid;
         }
+        return bids;
     }
 
     function storePK(bytes memory pk) internal returns (Suave.DataId) {
@@ -220,7 +243,7 @@ contract VickyLVRHookup is SuaveContract {
 		peekers[0] = address(this);
 		peekers[1] = Suave.FETCH_DATA_RECORDS;
 		peekers[2] = Suave.CONFIDENTIAL_RETRIEVE;
-		Suave.DataRecord memory secretBid = Suave.newDataRecord(0, peekers, peekers, PK_NAMESPACE);
+		Suave.DataRecord memory secretBid = Suave.newDataRecord(0, genericPeekers, genericPeekers, PK_NAMESPACE);
 		Suave.confidentialStore(secretBid.id, PK_NAMESPACE, pk);
 		return secretBid.id;
 	}
@@ -255,4 +278,21 @@ function splitSignature(bytes memory sig) pure returns (bytes32 r, bytes32 s, ui
     if (v < 27) {
         v += 27;
     }
+}
+
+function trimStrEdges(string memory _input) pure returns (string memory) {
+    bytes memory input = bytes(_input);
+    require(input.length > 2, "Input too short");
+
+    uint newLength = input.length - 2;
+    bytes memory result = new bytes(newLength);
+
+    assembly {
+        let inputPtr := add(input, 0x21)
+        let resultPtr := add(result, 0x20)
+        let length := mload(input)
+        mstore(resultPtr, mload(inputPtr))
+        mstore(result, newLength)
+    }
+    return string(result);
 }
