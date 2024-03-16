@@ -56,7 +56,7 @@ contract EscrowRegistry {
     // Signed data structure from SUAVE auction
     struct Bid {
         address bidder;
-        bytes32 pool;
+        PoolId pool;
         uint256 blockNumber;
         uint256 bidAmount;
     }
@@ -104,13 +104,15 @@ contract EscrowRegistry {
         poolTokens[v4Contract][id] = Tokens(poolTokenA, poolTokenB);
     }
 
-    function depositAndClaimOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes32 bid, bytes memory sig) public {
+    function depositAndClaimOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig) public {
         require(depositFunds(v4Contract, id, user, token, amount), "Failed to deposit");
-        require(claimPriorityOrdering(v4Contract, id, user, token, amount, blockNumber, bid, sig), "Failed to claim ordering");
+        require(claimPriorityOrdering(v4Contract, id, user, token, amount, blockNumber, sig), "Failed to claim ordering");
     }
 
-    function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes32 bid, bytes memory sig) public returns (bool) {
-        require(recoverSigner(bid, sig) == auctionMaster, "Auction master address mismatch");
+    function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig) public returns (bool) {
+        bytes32 bidDigest = createBidDigest(user, id, blockNumber, amount); 
+        require(recoverSigner(bidDigest, sig) == auctionMaster, "Auction master address mismatch");
+
         require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
 
         // charge token
@@ -176,6 +178,11 @@ contract EscrowRegistry {
         if (v < 27) {
             v += 27;
         }
+    }
+
+    function createBidDigest(address user, PoolId id, uint256 blockNumber, uint256 amountOfBid) public pure returns (bytes32) {
+        Bid memory bidStruct = Bid(user, id, blockNumber, amountOfBid);
+        return keccak256(abi.encode(bidStruct));
     }
 
     function checkValidtoken(address v4Contract, PoolId id, address token) public view returns (bool) {
