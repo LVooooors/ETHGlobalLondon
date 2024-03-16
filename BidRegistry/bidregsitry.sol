@@ -29,9 +29,9 @@ contract EscrowRegistry {
     // Signed data structure from SUAVE auction
     struct Bid {
         address bidder;
-        address pool;
-        uint blockNumber;
-        uint bidAmount;
+        bytes32 pool;
+        uint256 blockNumber;
+        uint256 bidAmount;
     }
 
     // Mapping between user and specific pool locked funds
@@ -78,11 +78,20 @@ contract EscrowRegistry {
     }
 
     function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber) public returns (bool) {
-        // TODO charge token
+        require(verifySignature(Bid memory bid, bytes memory sig) == auctionMaster, "Auction master address mismatch");
+        require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount) == true, "Insufficient funds");
+        
+        // charge token
+        escrow[v4Contract][id][token][user].amountSpent += amount;
         
         // If ok, then set ordering priority
         priorityOrdering[v4Contract][id][user][blockNumber] = true;
         return true;
+    }
+
+    function hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount) public view returns (bool) {
+        uint256 remainingAmount = escrow[v4Contract][id][token][user].amount - escrow[v4Contract][id][token][user].amountSpent;
+        return remainingAmount >= amount;
     }
 
     function isOwnerOfPriorityOrdering(address v4Contract, PoolId id, address user, uint256 blockNumber) public view returns (bool) {
@@ -106,6 +115,15 @@ contract EscrowRegistry {
 
     function enrichLPers() public {
         // TODO work out how to donate to a pool
+        // TODO reset escrow[v4Contract][id][token][user].amount and spentAmounts
+    }
+
+    function verifySignature(Bid memory bid, bytes memory sig) public pure returns (address) {
+        bytes32 structHash = keccak256(abi.encode(bid));
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", structHash));
+        address signer = ecrecover(messageHash, 0, sig, 0);
+        require(signer != address(0), "Invalid signature");
+        return signer;
     }
 
 }
