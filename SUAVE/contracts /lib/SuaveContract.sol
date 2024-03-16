@@ -1,6 +1,6 @@
 pragma solidity ^0.8.8;
 
-import { Suave } from "../../standard_peekers/bids.sol";
+import { Suave } from "./Suave.sol";
 
 
 abstract contract SuaveContract {

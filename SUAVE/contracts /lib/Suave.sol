@@ -431,7 +431,8 @@ library Suave {
     /// @param relayUrl URL of the relay to submit to
     /// @param builderBid Block bid to submit encoded in JSON
     /// @return blockBid Error message if any
-    function submitEthBlockToRelay(string memory relayUrl, bytes memory builderBid) internal returns (bytes memory) {
+    function submitEthBlockToRelay(string
+     memory relayUrl, bytes memory builderBid) internal returns (bytes memory) {
         require(isConfidential());
         (bool success, bytes memory data) = SUBMIT_ETH_BLOCK_TO_RELAY.call(abi.encode(relayUrl, builderBid));
         if (!success) {
