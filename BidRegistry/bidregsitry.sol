@@ -77,9 +77,9 @@ contract EscrowRegistry {
         require(claimPriorityOrdering(v4Contract, id, user, token, amount, blockNumber), "Failed to claim ordering");
     }
 
-    function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber) public returns (bool) {
-        require(verifySignature(Bid memory bid, bytes memory sig) == auctionMaster, "Auction master address mismatch");
-        require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount) == true, "Insufficient funds");
+    function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, Bid memory bid, bytes memory sig) public returns (bool) {
+        require(verifySignature(bid, sig) == auctionMaster, "Auction master address mismatch");
+        require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
         
         // charge token
         escrow[v4Contract][id][token][user].amountSpent += amount;
@@ -99,6 +99,8 @@ contract EscrowRegistry {
     }
 
     function depositFunds(address v4Contract, PoolId id, address user, address token, uint256 amount) public returns (bool) {
+        // Shortcut for hackathon - only support payments in pool token0
+        require(checkValidtoken(v4Contract, id, token), "Invalid token supplied, only token0 supported");
         IERC20 tokenContract = IERC20(token);
         require(tokenContract.transferFrom(user, address(this), amount), "Transfer failed");
         escrow[v4Contract][id][token][user].amount += amount;
@@ -124,6 +126,10 @@ contract EscrowRegistry {
         address signer = ecrecover(messageHash, 0, sig, 0);
         require(signer != address(0), "Invalid signature");
         return signer;
+    }
+
+    function checkValidtoken(address v4Contract, PoolId id, address token) public pure returns (bool) {
+        return poolTokens[v4Contract][id].tokenA == token;
     }
 
 }
