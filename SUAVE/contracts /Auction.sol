@@ -1,6 +1,8 @@
 pragma solidity ^0.8.9;
 
 import "./lib/SuaveContract.sol";
+// import "solady/src/utils/LibString.sol";
+import "lib/solady/src/utils/LibString.sol";
 
 
 contract VickyLVRHookup is SuaveContract {
@@ -34,16 +36,18 @@ contract VickyLVRHookup is SuaveContract {
 
     string constant PK_NAMESPACE = "auction:v0:pksecret";
     string constant BID_NAMESPACE = "auction:v0:bids";
+    address public immutable registry;
+    string public settlementChainRpc;
+    address public internalWallet;
+    uint64 public lastAuctionBlock;
     bool internal isInitialized;
     Suave.DataId internal pkBidId;
 
-    address public internalWallet;
-    address public registry;
-    uint64 public lastAuctionBlock;
 
     // ⛓️ EVM Methods
 
-    constructor(address _registry) {
+    constructor(address _registry, string memory _settlementChainRpc) {
+        settlementChainRpc = _settlementChainRpc;
         registry = _registry;
     }
 
@@ -97,8 +101,7 @@ contract VickyLVRHookup is SuaveContract {
         uint bidAmount
     ) public returns (bytes memory) {
         address bidder = msg.sender;
-        // todo: Call settlement chain to check if the bidder has enough funds to bid
-
+        require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
         storeBid(Bid(pool, poolId, blockNumber, bidder, bidAmount));
 
         return abi.encodeWithSelector(
@@ -107,24 +110,50 @@ contract VickyLVRHookup is SuaveContract {
         );
     }
 
-    // todo: add v4Contract
-
     function checkSufficientFundsLocked(
         address pool, 
         bytes32 poolId,
         address user, 
         uint bidAmount
-    ) public returns (bool) {
+    ) public view returns (bool) {
         bytes memory callData = abi.encodeWithSignature(
             "hasSufficientFundsToPayforOrdering",
-            pool, 
+            pool,
             poolId,
             user, 
             address(0), 
             bidAmount
         );
+        string memory callParam = string(abi.encodePacked(
+            '{"to": "', address(registry), 
+            '","data": "', LibString.toHexString(callData),
+            ',}'
+        ));
+        bytes memory response = eth_call(callParam);
+        return abi.decode(response, (bool));
+    }
 
-        // hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount)
+    function eth_call(string memory callParam) public view returns (bytes memory) {
+        bytes memory body = abi.encodePacked(
+            '{"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":["', 
+            callParam, 
+            '"],"id":1}'
+        );
+        /* solhint-enable */
+        Suave.HttpRequest memory request;
+        request.method = "POST";
+        request.body = body;
+        request.headers = new string[](1);
+        request.headers[0] = "Content-Type: application/json";
+        request.withFlashbotsSignature = false;
+        request.url = settlementChainRpc;
+        return doHttpRequest(request);
+    }
+
+    function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
+        (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
+        crequire(success, string(data));
+        return abi.decode(data, (bytes));
     }
 
     function settleAuction(address pool, bytes32 poolId, uint64 blockNumber) public returns (bytes memory) {
