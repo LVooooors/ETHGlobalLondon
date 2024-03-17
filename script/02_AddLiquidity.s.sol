@@ -17,7 +17,7 @@ contract AddLiquidityScript is Script {
     address constant POOL_MANAGER = address(0xE5dF461803a59292c6c03978c17857479c40bc46);
     address constant TOKEN1_ADDRESS = address(0xA47757c742f4177dE4eEA192380127F8B62455F5);
     address constant TOKEN2_ADDRESS = address(0xFDA93151f6146f763D3A80Ddb4C5C7B268469465);
-    address constant HOOK_ADDRESS = address(0x0301cF874CDB90ea311354eC6518aeF36F00C5FE);
+    address constant HOOK_ADDRESS = address(0x0304C8bd9b6e2C7C5c70fb62F812c6e2b00D5BA3);
 
     PoolModifyLiquidityTest lpRouter = PoolModifyLiquidityTest(address(0xd962b16F4ec712D705106674E944B04614F077be));
 
