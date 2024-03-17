@@ -4,6 +4,10 @@
 
 We fix LVR in Uniswap via v4 hooks using external SUAVE calls for credible second-bid auctions for top-of-block arb-swap rights, redistributing the profit to the LPs.
 
+![alt text](image.png)
+
+https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
+
 
 ## Project Setup
 
