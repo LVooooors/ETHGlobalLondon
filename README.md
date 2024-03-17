@@ -181,6 +181,97 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 - Arbitrum-Sepolia RPC sometimes throws this error: `It looks like you're trying to fork from an older block with a non-archive node which is not supported. Please try to change your RPC url to an archive node if the issue persists.`. Workaround: Just re-run the deployment script.
 - https://github.com/Uniswap/docs/pull/676 
 
+## BidRegistry Smart Contract
+
+This solidity smart contract, `BidRegistry`, is designed to facilitate the registration and management of bids in a decentralized auction environment. It allows users to deposit funds, register bids, and claim priority ordering within the auction. The contract interfaces with Uniswap V4 contracts for liquidity provisioning. 
+
+### Methods
+
+#### `constructor(address masterKey, address hooks)`
+
+Initializes the contract with the address of the auction master and hooks.
+
+#### `updateAuctionMasterKey(address updatedKey)`
+
+Allows updating the address of the auction master.
+
+#### `updateHooks(address updatedHook)`
+
+Allows updating the address of the hooks.
+
+#### `registerNewPool(address v4Contract, PoolId id, address poolTokenA, address poolTokenB)`
+
+Registers a new pool with the specified parameters.
+
+#### `depositAndClaimOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig)`
+
+Deposits funds and claims priority ordering for a user within a specified pool.
+
+#### `claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig)`
+
+Claims priority ordering for a user within a specified pool.
+
+#### `hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount)`
+
+Checks if a user has sufficient funds to pay for the claimed ordering.
+
+#### `isOwnerOfPriorityOrdering(address v4Contract, PoolId id, address user, uint256 blockNumber)`
+
+Checks if a user is the owner of priority ordering within a specified pool.
+
+#### `depositFunds(address v4Contract, PoolId id, address user, address tokenIgnored, uint256 amount)`
+
+Deposits funds into the contract for a user within a specified pool.
+
+#### `withdrawIdleFunds(address v4Contract, PoolId id, address token, address user)`
+
+Withdraws idle funds for a user within a specified pool.
+
+#### `enrichLPers(address v4Contract, PoolId id, address token, address user)`
+
+Enriches liquidity providers by donating funds to the specified Uniswap V4 pool.
+
+#### `recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature)`
+
+Recovers the signer of a message given the hash and signature.
+
+#### `splitSignature(bytes memory sig)`
+
+Splits a signature into its components.
+
+#### `createBidDigest(address v4Contract, address user, PoolId id, uint256 blockNumber, uint256 amountOfBid)`
+
+Creates a digest for a bid.
+
+#### `checkValidtoken(address v4Contract, PoolId id, address token)`
+
+Checks if the token supplied is valid for the specified pool.
+
+#### `createPoolKey(address tokenA, address tokenB)`
+
+Creates a pool key for a Uniswap V4 pool based on the tokens provided.
+
+## LvrShield Smart Contract
+
+The `LvrShield` solidity smart contract provides functionalities to manage liquidity provision in Uniswap V4 pools, specifically focusing on swap operations. It serves as a hook contract, implementing certain actions before and after swap operations.
+
+### Methods
+
+#### `constructor(IPoolManager _poolManager)`
+
+Initializes the contract with the provided `IPoolManager`.
+
+#### `getHookPermissions()`
+
+Returns the hook permissions specifying the allowed actions for this contract.
+
+#### `beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData)`
+
+Executes actions before a swap operation, including checking if it's the top of the block swap and if the auction for priority ordering was won.
+
+#### `afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)`
+
+Executes actions after a swap operation, updating the block swap counter.
 
 ## Limitations & Future Work
 
