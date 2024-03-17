@@ -9,6 +9,22 @@ We fix LVR (loss versus rebalancing, esp. wrt CEX) in Uniswap v4 pools by distri
 https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
 
 
+## Design
+
+### Goals
+
+- Achieve a mechanism that would lead to redistributing a maximum amount of LVR MEV back to LPs without rendering the DEX unresponsive or otherwise unattractive.
+
+### Assumptions
+
+- Block builders will "knapsack" mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
+  - This will be particularly non-problematic if the system attracts enough traffic to be seen by block builers who would render their algorithms aware of the auction-winning mechanism
+- There will be MEV potential so more sophisticated actors will submit non-zero bids close to the block deadline
+  - Timing needs to be in sync between the settlement layer and SUAVE
+  - If no traffic/interest, no bid will be submitted and the DEX will be blocked for a block - but this will result in a larger deviation from the real price, increasing the LVR value and increasing the chances that an actor would submit a bid
+  - If still no traffic, we could run an altruistic bot to every now and then submit a special zero-value bid to unlock the DEX
+
+
 ## Project Setup
 
 Requires [foundry](https://book.getfoundry.sh):
@@ -148,7 +164,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Limitations & Future Work
 
-- Block number needs to be re-enabled; cross-network time-syncing is non-trivial.
+- Block number needs to be re-enabled; cross-network time-syncing is non-trivial
+- Support special zero-value bid type (towards unlocking a potentially stuck DEX during low-traffic periods)
 
 
 ## Prizes/Bounties
