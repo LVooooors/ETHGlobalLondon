@@ -53,11 +53,9 @@ contract BidRegistry {
     //  v4 contract address
     //      pool id within v4
     //          address of user
-    //              address of token
     mapping(address => 
         mapping(PoolId => 
-            mapping(address => 
-                mapping(address => LockedBalance)))) public escrow;
+            mapping(address => LockedBalance))) public escrow;
 
     // Mapping between user and specific pool locked funds
     //  v4 contract address
@@ -103,7 +101,7 @@ contract BidRegistry {
         require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
 
         // charge token
-        escrow[v4Contract][id][token][user].amountSpent += amount;
+        escrow[v4Contract][id][user].amountSpent += amount;
 
         // If ok, then set ordering priority
         priorityOrdering[v4Contract][id][user][blockNumber] = true;
@@ -111,7 +109,7 @@ contract BidRegistry {
     }
 
     function hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount) public view returns (bool) {
-        uint256 remainingAmount = escrow[v4Contract][id][token][user].amount - escrow[v4Contract][id][token][user].amountSpent;
+        uint256 remainingAmount = escrow[v4Contract][id][user].amount - escrow[v4Contract][id][user].amountSpent;
         return remainingAmount > 0 && remainingAmount >= amount;
     }
 
@@ -119,35 +117,37 @@ contract BidRegistry {
         return priorityOrdering[v4Contract][id][user][blockNumber];
     }
 
-    function depositFunds(address v4Contract, PoolId id, address user, address token, uint256 amount) public returns (bool) {
-        // Shortcut for hackathon - only support payments in pool token0
+    function depositFunds(address v4Contract, PoolId id, address user, address tokenIgnored, uint256 amount) public returns (bool) {
+        // Shortcut for hackathon - only support payments in pool token0 (ignore token param)
+        address token = poolTokens[v4Contract][id].tokenA;
+
         require(checkValidtoken(v4Contract, id, token), "Invalid token supplied, only token0 supported");
         IERC20 tokenContract = IERC20(token);
         require(tokenContract.transferFrom(user, address(this), amount), "Transfer failed");
-        escrow[v4Contract][id][token][user].amount += amount;
+        escrow[v4Contract][id][user].amount += amount;
         return true;
     }
 
     function withdrawIdleFunds(address v4Contract, PoolId id, address token, address user) public returns (bool) {
-        require(escrow[v4Contract][id][token][user].amount > escrow[v4Contract][id][token][user].amountSpent, "No idle funds");
-        uint256 amount = escrow[v4Contract][id][token][user].amount - escrow[v4Contract][id][token][user].amountSpent;
+        require(escrow[v4Contract][id][user].amount > escrow[v4Contract][id][user].amountSpent, "No idle funds");
+        uint256 amount = escrow[v4Contract][id][user].amount - escrow[v4Contract][id][user].amountSpent;
         require(IERC20(token).transfer(user, amount), "Transfer failed");
-        escrow[v4Contract][id][token][user].amount -= amount;
+        escrow[v4Contract][id][user].amount -= amount;
         return true;
     }
 
     function enrichLPers(address v4Contract, PoolId id, address token, address user) public {
-        require(escrow[v4Contract][id][token][user].amount >= escrow[v4Contract][id][token][user].amountSpent, "Amounts mismatch");
+        require(escrow[v4Contract][id][user].amount >= escrow[v4Contract][id][user].amountSpent, "Amounts mismatch");
 
         address t0 = poolTokens[v4Contract][id].tokenA;
         address t1 = poolTokens[v4Contract][id].tokenB;
         PoolKey memory key = createPoolKey(t0, t1);
         
-        uint256 amountToEnrich = escrow[v4Contract][id][token][user].amountSpent;
+        uint256 amountToEnrich = escrow[v4Contract][id][user].amountSpent;
         IUniswapV4(v4Contract).donate(key, amountToEnrich, 0, new bytes(0));
 
-        escrow[v4Contract][id][token][user].amount -= escrow[v4Contract][id][token][user].amountSpent;
-        escrow[v4Contract][id][token][user].amountSpent = 0;
+        escrow[v4Contract][id][user].amount -= escrow[v4Contract][id][user].amountSpent;
+        escrow[v4Contract][id][user].amountSpent = 0;
     }
 
     function recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature) public pure returns (address) {
