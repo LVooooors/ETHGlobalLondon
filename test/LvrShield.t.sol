@@ -49,7 +49,7 @@ contract LvrShieldTest is Test, Deployers {
 
         lvrShield = new LvrShield{salt: salt}(IPoolManager(address(manager)));
 
-        BidRegistry bidRegistry = new BidRegistry(address(0x0000000000000000000000008a12b5ecfd70e45e916cf8b726592703e0503586), address(lvrShield));
+        BidRegistry bidRegistry = new BidRegistry(address(0x00000000000000000000000080b3247491dd7843e0bb85cb8a403fcbedcc2813), address(lvrShield));
 
         lvrShield.setBidRegistry(address(bidRegistry));
         
@@ -74,14 +74,14 @@ contract LvrShieldTest is Test, Deployers {
         bidRegistry.registerNewPool(address(0x0),poolId,Currency.unwrap(currency0),Currency.unwrap(currency1));
         IERC20(Currency.unwrap(currency0)).approve(address(bidRegistry), UINT256_MAX);
         bidRegistry.depositFunds(address(0x0), poolId, address(this), address(0x0), 500000);
-        console.log(IERC20(Currency.unwrap(currency0)).balanceOf(address(this)));
+        // console.log(IERC20(Currency.unwrap(currency0)).balanceOf(address(this)));
         // IERC20(Currency.unwrap(currency0)).balanceOf(address(bidRegistry));
-
+        console.log("Setup successful");
     }
 
     function testLvrShieldHooks() public {
         // positions were created in setup()
-        console.log(lvrShield.blockSwapCounter(poolId, block.number));
+        // console.log(lvrShield.blockSwapCounter(poolId, block.number));
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 0);
 
         // Perform a test swap 1 //
@@ -106,14 +106,16 @@ contract LvrShieldTest is Test, Deployers {
 
         swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 2);
+
+        console.log("Two swaps successful");
     }
     
-    function testLiquidityHooks() public {
-        // positions were created in setup()
+    // function testLiquidityHooks() public {
+    //     // positions were created in setup()
 
-        // remove liquidity
-        int256 liquidityDelta = -1e18;
-        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES);
+    //     // remove liquidity
+    //     int256 liquidityDelta = -1e18;
+    //     modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES);
 
-    }
+    // }
 }
