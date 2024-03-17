@@ -1,27 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-
-// Definition from https://github.com/Uniswap/v4-core/blob/main/src/types/BalanceDelta.sol
-type BalanceDelta is int256;
-
-// Definition from https://github.com/Uniswap/v4-core/blob/main/src/types/Currency.sol
-type Currency is address;
+import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
+import {Currency} from "v4-core/src/types/Currency.sol";
+import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
 // TODO: SafeERC20
 interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-}
-
-// Definition from https://github.com/Uniswap/v4-core/blob/main/src/types/PoolKey.sol
-struct PoolKey {
-    Currency currency0;
-    Currency currency1;
-    uint24 fee;
-    int24 tickSpacing;
-    address hooks;
 }
 
 // From https://github.com/Uniswap/v4-core/blob/main/src/PoolManager.sol
@@ -194,7 +183,7 @@ contract BidRegistry {
         returns (PoolKey memory)
     {
         if (address(tokenA) > address(tokenB)) (tokenA, tokenB) = (tokenB, tokenA);
-        return PoolKey(Currency.wrap(address(tokenA)), Currency.wrap(address(tokenB)), 3000, 60, hookAddress);
+        return PoolKey(Currency.wrap(address(tokenA)), Currency.wrap(address(tokenB)), 3000, 60, IHooks(hookAddress));
     }
 
 }

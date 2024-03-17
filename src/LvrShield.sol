@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
-import {EscrowRegistry} from "../../BidRegistry/bidregsitry.sol";
+import {BidRegistry} from "../BidRegistry/BidRegistry.sol";
 
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
@@ -42,9 +42,8 @@ contract LvrShield is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData, EscrowRegistry escrowRegistry, address v4ContractHookAddress, address feeToken)
+    function beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData, BidRegistry escrowRegistry, address v4ContractHookAddress, address feeToken)
         external
-        view
         returns (bytes4)
     {
         // Check if top of block for this pair

@@ -67,7 +67,7 @@ contract LvrShieldTest is Test, Deployers {
 
         // Perform a test swap 2 //
 
-        BalanceDelta swapDelta2 = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 2);
     }
     
