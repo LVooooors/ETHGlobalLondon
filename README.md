@@ -27,6 +27,9 @@ Our SUAVE trusted execution environments can now run credible auctions for any c
 
 The SUAVE auction resolves quickly, providing a signed message to the winner which can then be passed to the Uniswap V4 pool as additional hookData accompanying their swap transaction. A v4 pre-swap hook then verifies the validity of the signed message data and compares it to the swap that has been submitted. If valid, an execution ordering condition is imposed on successful execution of transactions for this pool, resulting in adequate ordering created by block builders.
 
+### Component and logic flow
+
+![image](https://github.com/LVooooors/ETHGlobalLondon/assets/21056525/6b01bfdb-70cd-48c5-a806-bc3f92612df6)
 
 ### Assumptions
 
