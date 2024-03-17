@@ -61,7 +61,8 @@ contract SwapScript is Script {
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
 
-        bytes memory hookData = new bytes(0);
+        bytes memory hookData = hex"b109d41a4f2a6bc531deb49ae7a44bb823bb1c80144a51232369975b8e8bec813207c1d41c4720eb9357989c91b288de0945b60dfe380b80dc665b998687917201"; // TODO: Use allowed sig
+
         vm.broadcast();
         swapRouter.swap(pool, params, testSettings, hookData);
     }
