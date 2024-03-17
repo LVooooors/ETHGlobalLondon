@@ -9,6 +9,6 @@ contract BidRegistryScript is Script {
 
     function run() public {
         vm.broadcast();
-        new BidRegistry(address(this), address(this));
+        new BidRegistry(0x54a4dDa9CE124774aEaEDb9056fD14f98b55AFFC, address(this));
     }
 }

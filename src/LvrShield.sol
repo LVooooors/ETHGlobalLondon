@@ -15,7 +15,7 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 struct BidData {
     // address pool;
     // bytes32 poolId;
-    // address bidder;
+    address bidder;
     uint64 blockNumber;
     uint bidAmount;
     bytes sig;
@@ -30,8 +30,15 @@ contract LvrShield is BaseHook {
     // ---------------------------------------------------------------
 
     mapping(PoolId poolId => mapping(uint blockNumber => uint256 poolBlockSwapCounter)) public blockSwapCounter;
+    
+    address bidRegistry;
+    
+    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {
+    }
 
-    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+    function setBidRegistry(address _bidRegistry) public {
+        bidRegistry = _bidRegistry;
+    }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
@@ -62,18 +69,18 @@ contract LvrShield is BaseHook {
             // If yes, check if it won the auction - or revert
 
             address v4ContractHookAddress = address(this);
-            BidRegistry bidRegistry = BidRegistry(0xa43e520783230a2347946EAC7946A92a8379781c); // TODO: Make dynamic
+            //BidRegistry bidRegistry = BidRegistry(0xa43e520783230a2347946EAC7946A92a8379781c); // TODO: Make dynamic
             // BidRegistry bidRegistry = new BidRegistry(0xA47757c742f4177dE4eEA192380127F8B62455F5, address(this)); // TODO: Make dynamic
             address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
-            
+
             PoolId poolId = key.toId();
             BidData memory bidData = abi.decode(hookData, (BidData));
             // require(bidData.bidder == msg.sender, "sender is not the winner"); // not needed as sig will fail otherwise
 
-            require(bidRegistry.claimPriorityOrdering(
+            require(BidRegistry(bidRegistry).claimPriorityOrdering(
                 v4ContractHookAddress, 
                 poolId, 
-                sender, 
+                bidData.bidder,
                 feeToken, 
                 bidData.bidAmount, 
                 bidData.blockNumber, 

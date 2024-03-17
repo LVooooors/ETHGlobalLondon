@@ -14,12 +14,14 @@ import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {LvrShield} from "../src/LvrShield.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
+import {BidRegistry} from "../src/BidRegistry.sol";
+
 
 // From SUAVE, for reference:
 struct BidData {
     // address pool;
     // bytes32 poolId;
-    // address bidder;
+    address bidder;
     uint64 blockNumber;
     uint bidAmount;
     bytes sig;
@@ -43,7 +45,10 @@ contract LvrShieldTest is Test, Deployers {
         );
         (address hookAddress, bytes32 salt) =
             HookMiner.find(address(this), flags, type(LvrShield).creationCode, abi.encode(address(manager)));
+
         lvrShield = new LvrShield{salt: salt}(IPoolManager(address(manager)));
+        lvrShield.setBidRegistry(address(new BidRegistry(address(0x000000000000000000000000b56fdf7d1ea7d365f111b7e48f52f91087e54c40), address(lvrShield))));
+        
         require(address(lvrShield) == hookAddress, "LvrShieldTest: hook address mismatch");
 
         // Create the pool
@@ -73,10 +78,12 @@ contract LvrShieldTest is Test, Deployers {
         BidData memory bidData = BidData({
             blockNumber: 2134116, 
             bidAmount: 2000000000000000, 
-            sig: hex'fcd8905495f10f76e023b7f6f4d358a4ea6b8ca087897755a5545e997a8bc77d32c3c52eb5ec9d53efc229676ef8482c5a662c77cd354a6922a9e0a834f8f50000'
+            sig: hex'fcd8905495f10f76e023b7f6f4d358a4ea6b8ca087897755a5545e997a8bc77d32c3c52eb5ec9d53efc229676ef8482c5a662c77cd354a6922a9e0a834f8f50000',
+            bidder: 0x2f11299cb7d762F01b55EEa66f79e4cB02F02786
         });
 
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(bidData)); // TODO: Insert valid test SUAVE bidData incl. signature here (as hookData)
+        console.log(msg.sender);
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(bidData));
 
         assertEq(int256(swapDelta.amount0()), amountSpecified);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 1);
