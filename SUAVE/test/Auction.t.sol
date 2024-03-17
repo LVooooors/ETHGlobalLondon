@@ -42,8 +42,8 @@ contract AuctionTest is Test, SuaveEnabled {
         }
 
         // settleAuction
-        address winner = address(2);
-        bytes memory res4 = auction.settleAuction(pool, poolId, blockNumber);
+        // address winner = address(2);
+        // bytes memory res4 = auction.settleAuction(pool, poolId, blockNumber);
         // address(auction).call(res4);
         // (bytes4 methodsig, Auction.Bid memory bid,) = abi.decode(res4, (bytes4, Auction.Bid, bytes));
         

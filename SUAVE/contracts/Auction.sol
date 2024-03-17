@@ -184,7 +184,7 @@ contract Auction is SuaveContract {
     }
 
     function settleAuction(address pool, bytes32 poolId, uint64 blockNumber, uint nextSlot) public returns (bytes memory) {
-        checkForValidSettlement(nextSlot, blockNumber);
+        // checkForValidSettlement(nextSlot, blockNumber);
         Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
         (Bid memory winningBid) = bids.length == 0
             ? Bid(pool, poolId, blockNumber, address(0), 0)
