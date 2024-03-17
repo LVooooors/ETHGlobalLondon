@@ -13,6 +13,7 @@ Requires [foundry](https://book.getfoundry.sh):
 forge install
 ```
 
+
 ## Development and Testing
 
 ### Local Unit Tests
@@ -124,6 +125,13 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 [v4-core](https://github.com/uniswap/v4-core)
 
 [v4-by-example](https://v4-by-example.org)
+
+
+## Hackathon Deployment
+
+- SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xBb31e85bd7ABb995A020BDb91352c331368C8e19
+- BidRegistry: https://sepolia.arbiscan.io/address/0xccf033a3ac520432c0ade7a3765a00087e2ec3e5
+- LvrShield hook: https://sepolia.arbiscan.io/address/0x030418916cb8A600dc02d307204dD8828b3aA179
 
 
 ## Hackathon Observations
