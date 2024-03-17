@@ -273,6 +273,66 @@ Executes actions before a swap operation, including checking if it's the top of 
 
 Executes actions after a swap operation, updating the block swap counter.
 
+## SUAPP Auction Smart Contract
+
+The `Auction` solidity smart contract facilitates the management of auctions for Uniswap V4 pools. It enables users to submit bids, settle auctions, and perform various utility functions related to auctions. This contract integrates with the Suave framework for confidential transactions.
+
+### Methods
+
+#### `constructor(address _registry, string memory _settlementChainRpc)`
+
+Initializes the contract with the provided registry address and settlement chain RPC.
+
+#### `confidentialConstructorCallback(Suave.DataId _pkBidId, address pkAddress) public`
+
+Callback function for confidential constructor, initializes the contract with private key data.
+
+#### `submitBidCallback(Bid memory bid) public`
+
+Callback function for submitting a bid, emits a `BidSubmitted` event.
+
+#### `settleAuctionCallback(Bid memory winningBid, bytes memory sig) public`
+
+Callback function for settling an auction, emits an `AuctionSettled` event.
+
+#### `submitBid(address pool, bytes32 poolId, uint64 blockNumber, uint bidAmount) public returns (bytes memory)`
+
+Allows a user to submit a bid for an auction.
+
+#### `checkSufficientFundsLocked(address pool, bytes32 poolId, address user, uint bidAmount) public view returns (bool)`
+
+Checks if a user has sufficient funds locked for placing a bid.
+
+#### `settleAuction(address pool, bytes32 poolId, uint64 blockNumber, uint nextSlot) public returns (bytes memory)`
+
+Setstles an auction for the specified pool and parameters.
+
+#### `slotToBlockNumber(uint slot) public view returns (uint64)`
+
+Converts a slot number to a corresponding block number.
+
+#### `timestampForSlot(uint slot) public pure returns (uint)`
+
+Calculates the timestamp for a given slot.
+
+#### `signBid(Bid memory bid) public returns (bytes memory sig)`
+
+Signs a bid using the private key.
+
+#### `fetchBids(address pool, bytes32 poolId, uint64 blockNumber) public returns (Bid[] memory)`
+
+Fetches all bids for the specified pool and block number.
+
+#### `storePK(bytes memory pk) internal returns (Suave.DataId)`
+
+Stores the private key securely.
+
+#### `retreivePK() internal returns (string memory)`
+
+Retrieves the stored private key.
+
+
+
 ## Limitations & Future Work
 
 - Re-enable the block number check (per pool-top-of-block auction winner) in [./src/LvrShield]([./src/LvrShield]) and use a proper settlement-layer block number in SUAVE; disabled currently as:
