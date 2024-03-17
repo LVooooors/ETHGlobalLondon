@@ -11,6 +11,16 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
+// From SUAVE, for reference:
+struct BidData {
+    // address pool;
+    // bytes32 poolId;
+    // address bidder;
+    uint64 blockNumber;
+    uint bidAmount;
+    bytes sig;
+}
+
 contract LvrShield is BaseHook {
     using PoolIdLibrary for PoolKey;
 
@@ -57,8 +67,19 @@ contract LvrShield is BaseHook {
             address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
 
             PoolId poolId = key.toId();
+            BidData memory bidData = abi.decode(hookData, (BidData));
+            // require(bidData.bidder == msg.sender, "sender is not the winner"); // sig will fail otherwise
 
-            require(bidRegistry.claimPriorityOrdering(v4ContractHookAddress, poolId, sender, feeToken, uint256(swapParams.amountSpecified), block.number, hookData), "This is a top of block swap but it wasn't the auction winner");
+            require(bidRegistry.claimPriorityOrdering(
+                v4ContractHookAddress, 
+                poolId, 
+                sender, 
+                feeToken, 
+                bidData.bidAmount, 
+                bidData.blockNumber, 
+                bidData.sig
+            ), "This is a top of block swap but it wasn't the auction winner");
+            // TODO once timing alignment sorted out: Ensure block.number == bidData.blockNumber
         }
         return BaseHook.beforeSwap.selector;
     }

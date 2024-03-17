@@ -165,8 +165,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 - Token1 LVRST1: https://sepolia.arbiscan.io/token/0xa47757c742f4177de4eea192380127f8b62455f5
 - Token2 LVRST2: https://sepolia.arbiscan.io/token/0xfda93151f6146f763d3a80ddb4c5c7b268469465
 - BidRegistry: https://sepolia.arbiscan.io/address/0xa43e520783230a2347946EAC7946A92a8379781c (cf. LvrShield.sol)
-- LvrShield hook: https://sepolia.arbiscan.io/address/0x030e0A80f42E3b943a4599B6E3F1712214511386 (cf. 01-03 scripts)
-- PoolID: `0xb707601b547d329c2588a18b028d6b20ff75c5f6f364c133ad05b8785a1df7e3`
+- LvrShield hook: https://sepolia.arbiscan.io/address/0x030eF8F38E149C7954B481208a2305F9D6B82E8e (cf. 01-03 scripts)
+- PoolID: `0xcc8fda3516a2362da0bc1e5a33ccbf8913616bc400cac3d7ae6e0e9dc5097834`
 - SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xfa3F11B48F58E72ECaF3ba7fdcAe9b4341822ED8
 
 
@@ -178,7 +178,7 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Limitations & Future Work
 
-- Block number checks per pool-top-of-block auction winner checks needs to be re-enabled; disabled currently as:
+- Re-enable the block number check (per pool-top-of-block auction winner) in [./src/LvrShield]([./src/LvrShield]) and use a proper settlement-layer block number in SUAVE; disabled currently as:
   - Uniswap v4 isn't deployable to Ethereum (Sepolia) due to contract storage out of gas issues, so we temporarily use a fast-blocktime L2 (Arbitrum Sepolia) for testing
   - Getting cross-network time-syncing (precise phase offset) right is non-trivial, in particular with the currently deploye Clique PoA on SUAVE; it will probably require a re-instantiation of SUAVE, too
 - Support special zero-value bid type (towards unlocking a potentially stuck DEX during low-traffic periods)

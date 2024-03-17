@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+// DO NOT USE THIS
+
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
