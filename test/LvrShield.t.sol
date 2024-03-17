@@ -15,6 +15,16 @@ import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {LvrShield} from "../src/LvrShield.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
 
+// From SUAVE, for reference:
+struct BidData {
+    // address pool;
+    // bytes32 poolId;
+    // address bidder;
+    uint64 blockNumber;
+    uint bidAmount;
+    bytes sig;
+}
+
 contract LvrShieldTest is Test, Deployers {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -59,8 +69,14 @@ contract LvrShieldTest is Test, Deployers {
         // Perform a test swap 1 //
 
         bool zeroForOne = true;
-        int256 amountSpecified = -1e18; // negative number indicates exact input swap!
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES); // TODO: Insert valid test SUAVE signature here (as hookData)
+        int256 amountSpecified = -20000; // negative number indicates exact input swap!
+        BidData memory bidData = BidData({
+            blockNumber: 2134116, 
+            bidAmount: 2000000000000000, 
+            sig: hex'fcd8905495f10f76e023b7f6f4d358a4ea6b8ca087897755a5545e997a8bc77d32c3c52eb5ec9d53efc229676ef8482c5a662c77cd354a6922a9e0a834f8f50000'
+        });
+
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(bidData)); // TODO: Insert valid test SUAVE bidData incl. signature here (as hookData)
 
         assertEq(int256(swapDelta.amount0()), amountSpecified);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 1);
