@@ -100,7 +100,7 @@ contract BidRegistry {
     }
 
     function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig) public returns (bool) {
-        bytes32 bidDigest = createBidDigest(v4Contract, user, id, blockNumber, amount); 
+        bytes32 bidDigest = createBidDigest(v4Contract, user, id, 0, amount); // TODO: Replace the `0` by `blockNumber to enable block number check
         require(recoverSigner(bidDigest, sig) == auctionMaster, "Auction master address mismatch");
         require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
 
