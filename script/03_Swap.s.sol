@@ -17,8 +17,6 @@ contract SwapScript is Script {
     address constant TOKEN2_ADDRESS = address(0xFDA93151f6146f763D3A80Ddb4C5C7B268469465);
     address constant HOOK_ADDRESS = address(0x030e0A80f42E3b943a4599B6E3F1712214511386);
 
-    // pool ID: 0x8d161374ff7aae0d75bd014d7210b0de3d0ad9ff6fcb914d61292487765121f8
-
     PoolSwapTest swapRouter = PoolSwapTest(0x5bA874E13D2Cf3161F89D1B1d1732D14226dBF16);
 
     // slippage tolerance to allow for unlimited price impact

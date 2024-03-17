@@ -164,9 +164,10 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 - Token1 LVRST1: https://sepolia.arbiscan.io/token/0xa47757c742f4177de4eea192380127f8b62455f5
 - Token2 LVRST2: https://sepolia.arbiscan.io/token/0xfda93151f6146f763d3a80ddb4c5c7b268469465
-- SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xfa3F11B48F58E72ECaF3ba7fdcAe9b4341822ED8
 - BidRegistry: https://sepolia.arbiscan.io/address/0xa43e520783230a2347946EAC7946A92a8379781c (cf. LvrShield.sol)
 - LvrShield hook: https://sepolia.arbiscan.io/address/0x030e0A80f42E3b943a4599B6E3F1712214511386 (cf. 01-03 scripts)
+- PoolID: `0xb707601b547d329c2588a18b028d6b20ff75c5f6f364c133ad05b8785a1df7e3`
+- SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xfa3F11B48F58E72ECaF3ba7fdcAe9b4341822ED8
 
 
 ## Hackathon Observations
