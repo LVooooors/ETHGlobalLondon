@@ -27,6 +27,9 @@ Our SUAVE trusted execution environments can now run credible auctions for any c
 
 The SUAVE auction resolves quickly, providing a signed message to the winner which can then be passed to the Uniswap V4 pool as additional hookData accompanying their swap transaction. A v4 pre-swap hook then verifies the validity of the signed message data and compares it to the swap that has been submitted. If valid, an execution ordering condition is imposed on successful execution of transactions for this pool, resulting in adequate ordering created by block builders.
 
+### Component and logic flow
+
+![image](https://github.com/LVooooors/ETHGlobalLondon/assets/21056525/6b01bfdb-70cd-48c5-a806-bc3f92612df6)
 
 ### Assumptions
 
@@ -185,6 +188,157 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 - Arbitrum-Sepolia RPC sometimes throws this error: `It looks like you're trying to fork from an older block with a non-archive node which is not supported. Please try to change your RPC url to an archive node if the issue persists.`. Workaround: Just re-run the deployment script.
 - Uniswap docs: https://github.com/Uniswap/docs/pull/676 (URL fix).
 - Chiliz Spicy requires an older solidity version (we used 0.8.0), legacy (non-1559) tx, and doesn't seem to support CREATE2 which is our dependency (for Uniswap v4 hook addressing); deployment gas fees seem quite high, too.
+
+## BidRegistry Smart Contract
+
+This solidity smart contract, `BidRegistry`, is designed to facilitate the registration and management of bids in a decentralized auction environment. It allows users to deposit funds, register bids, and claim priority ordering within the auction. The contract interfaces with Uniswap V4 contracts for liquidity provisioning. 
+
+### Methods
+
+#### `constructor(address masterKey, address hooks)`
+
+Initializes the contract with the address of the auction master and hooks.
+
+#### `updateAuctionMasterKey(address updatedKey)`
+
+Allows updating the address of the auction master.
+
+#### `updateHooks(address updatedHook)`
+
+Allows updating the address of the hooks.
+
+#### `registerNewPool(address v4Contract, PoolId id, address poolTokenA, address poolTokenB)`
+
+Registers a new pool with the specified parameters.
+
+#### `depositAndClaimOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig)`
+
+Deposits funds and claims priority ordering for a user within a specified pool.
+
+#### `claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig)`
+
+Claims priority ordering for a user within a specified pool.
+
+#### `hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount)`
+
+Checks if a user has sufficient funds to pay for the claimed ordering.
+
+#### `isOwnerOfPriorityOrdering(address v4Contract, PoolId id, address user, uint256 blockNumber)`
+
+Checks if a user is the owner of priority ordering within a specified pool.
+
+#### `depositFunds(address v4Contract, PoolId id, address user, address tokenIgnored, uint256 amount)`
+
+Deposits funds into the contract for a user within a specified pool.
+
+#### `withdrawIdleFunds(address v4Contract, PoolId id, address token, address user)`
+
+Withdraws idle funds for a user within a specified pool.
+
+#### `enrichLPers(address v4Contract, PoolId id, address token, address user)`
+
+Enriches liquidity providers by donating funds to the specified Uniswap V4 pool.
+
+#### `recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature)`
+
+Recovers the signer of a message given the hash and signature.
+
+#### `splitSignature(bytes memory sig)`
+
+Splits a signature into its components.
+
+#### `createBidDigest(address v4Contract, address user, PoolId id, uint256 blockNumber, uint256 amountOfBid)`
+
+Creates a digest for a bid.
+
+#### `checkValidtoken(address v4Contract, PoolId id, address token)`
+
+Checks if the token supplied is valid for the specified pool.
+
+#### `createPoolKey(address tokenA, address tokenB)`
+
+Creates a pool key for a Uniswap V4 pool based on the tokens provided.
+
+## LvrShield Smart Contract
+
+The `LvrShield` solidity smart contract provides functionalities to manage liquidity provision in Uniswap V4 pools, specifically focusing on swap operations. It serves as a hook contract, implementing certain actions before and after swap operations.
+
+### Methods
+
+#### `constructor(IPoolManager _poolManager)`
+
+Initializes the contract with the provided `IPoolManager`.
+
+#### `getHookPermissions()`
+
+Returns the hook permissions specifying the allowed actions for this contract.
+
+#### `beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData)`
+
+Executes actions before a swap operation, including checking if it's the top of the block swap and if the auction for priority ordering was won.
+
+#### `afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)`
+
+Executes actions after a swap operation, updating the block swap counter.
+
+## SUAPP Auction Smart Contract
+
+The `Auction` solidity smart contract facilitates the management of auctions for Uniswap V4 pools. It enables users to submit bids, settle auctions, and perform various utility functions related to auctions. This contract integrates with the Suave framework for confidential transactions.
+
+### Methods
+
+#### `constructor(address _registry, string memory _settlementChainRpc)`
+
+Initializes the contract with the provided registry address and settlement chain RPC.
+
+#### `confidentialConstructorCallback(Suave.DataId _pkBidId, address pkAddress) public`
+
+Callback function for confidential constructor, initializes the contract with private key data.
+
+#### `submitBidCallback(Bid memory bid) public`
+
+Callback function for submitting a bid, emits a `BidSubmitted` event.
+
+#### `settleAuctionCallback(Bid memory winningBid, bytes memory sig) public`
+
+Callback function for settling an auction, emits an `AuctionSettled` event.
+
+#### `submitBid(address pool, bytes32 poolId, uint64 blockNumber, uint bidAmount) public returns (bytes memory)`
+
+Allows a user to submit a bid for an auction.
+
+#### `checkSufficientFundsLocked(address pool, bytes32 poolId, address user, uint bidAmount) public view returns (bool)`
+
+Checks if a user has sufficient funds locked for placing a bid.
+
+#### `settleAuction(address pool, bytes32 poolId, uint64 blockNumber, uint nextSlot) public returns (bytes memory)`
+
+Setstles an auction for the specified pool and parameters.
+
+#### `slotToBlockNumber(uint slot) public view returns (uint64)`
+
+Converts a slot number to a corresponding block number.
+
+#### `timestampForSlot(uint slot) public pure returns (uint)`
+
+Calculates the timestamp for a given slot.
+
+#### `signBid(Bid memory bid) public returns (bytes memory sig)`
+
+Signs a bid using the private key.
+
+#### `fetchBids(address pool, bytes32 poolId, uint64 blockNumber) public returns (Bid[] memory)`
+
+Fetches all bids for the specified pool and block number.
+
+#### `storePK(bytes memory pk) internal returns (Suave.DataId)`
+
+Stores the private key securely.
+
+#### `retreivePK() internal returns (string memory)`
+
+Retrieves the stored private key.
+
 
 
 ## Limitations & Future Work
