@@ -55,6 +55,7 @@ contract EscrowRegistry {
 
     // Signed data structure from SUAVE auction
     struct Bid {
+        address v4Contract;
         address bidder;
         PoolId pool;
         uint256 blockNumber;
@@ -110,9 +111,8 @@ contract EscrowRegistry {
     }
 
     function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig) public returns (bool) {
-        bytes32 bidDigest = createBidDigest(user, id, blockNumber, amount); 
+        bytes32 bidDigest = createBidDigest(v4Contract, user, id, blockNumber, amount); 
         require(recoverSigner(bidDigest, sig) == auctionMaster, "Auction master address mismatch");
-
         require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
 
         // charge token
@@ -125,7 +125,7 @@ contract EscrowRegistry {
 
     function hasSufficientFundsToPayforOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount) public view returns (bool) {
         uint256 remainingAmount = escrow[v4Contract][id][token][user].amount - escrow[v4Contract][id][token][user].amountSpent;
-        return remainingAmount >= amount;
+        return remainingAmount > 0 && remainingAmount >= amount;
     }
 
     function isOwnerOfPriorityOrdering(address v4Contract, PoolId id, address user, uint256 blockNumber) public view returns (bool) {
@@ -180,8 +180,8 @@ contract EscrowRegistry {
         }
     }
 
-    function createBidDigest(address user, PoolId id, uint256 blockNumber, uint256 amountOfBid) public pure returns (bytes32) {
-        Bid memory bidStruct = Bid(user, id, blockNumber, amountOfBid);
+    function createBidDigest(address v4Contract, address user, PoolId id, uint256 blockNumber, uint256 amountOfBid) public pure returns (bytes32) {
+        Bid memory bidStruct = Bid(v4Contract, user, id, blockNumber, amountOfBid);
         return keccak256(abi.encode(bidStruct));
     }
 
