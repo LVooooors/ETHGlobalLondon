@@ -17,8 +17,9 @@ https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
 
 ### Assumptions
 
-- Block builders will "knapsack" mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
+- Block builders will bundle mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
   - This will be particularly non-problematic if the system attracts enough traffic to be seen by block builers who would render their algorithms aware of the auction-winning mechanism
+  - Multiple parallel simulations should result in the valid combination becoming readily apparent even without explicit ordering suggestions sent to the builders.
 - There will be MEV potential so more sophisticated actors will submit non-zero bids close to the block deadline
   - Timing needs to be in sync between the settlement layer and SUAVE
   - If no traffic/interest, no bid will be submitted and the DEX will be blocked for a block - but this will result in a larger deviation from the real price, increasing the LVR value and increasing the chances that an actor would submit a bid
