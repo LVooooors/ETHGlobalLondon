@@ -53,6 +53,7 @@ contract LvrShield is BaseHook {
 
             address v4ContractHookAddress = address(this);
             BidRegistry bidRegistry = BidRegistry(0xcCf033a3Ac520432c0adE7a3765a00087E2EC3e5); // TODO: Make dynamic
+            // BidRegistry bidRegistry = new BidRegistry(0xA47757c742f4177dE4eEA192380127F8B62455F5, address(this)); // TODO: Make dynamic
             address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
 
             PoolId poolId = key.toId();
