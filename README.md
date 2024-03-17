@@ -11,19 +11,20 @@ https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
 
 ## Design
 
-### Goals
+### Goal
 
-- Achieve a mechanism that would lead to redistributing a maximum amount of LVR MEV back to LPs without rendering the DEX unresponsive or otherwise unattractive.
+- Achieve a mechanism that would lead to redistributing a maximum amount of LVR MEV back to LPs without rendering the DEX unresponsive or otherwise unattractive
 
 ### Assumptions
 
-- Block builders will "knapsack" mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
+- Block builders will "knapsack-pack" mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
   - This will be particularly non-problematic if the system attracts enough traffic to be seen by block builers who would render their algorithms aware of the auction-winning mechanism
 - There will be MEV potential so more sophisticated actors will submit non-zero bids close to the block deadline
   - Timing needs to be in sync between the settlement layer and SUAVE
   - If no traffic/interest, no bid will be submitted and the DEX will be blocked for a block - but this will result in a larger deviation from the real price, increasing the LVR value and increasing the chances that an actor would submit a bid
   - If still no traffic, we could run an altruistic bot to every now and then submit a special zero-value bid to unlock the DEX
 - Given sufficient "critical mass", the credible second-bid auction will lead to most of the LVR EV being reflected in the auction proceeds, therefore making execution more equitable and closer to a CEX experience
+- In order to maximise the redistributable LVR value, the SUAVE auction needs to be finalised as close to the next settlement layer (ultimately, Ethereum) block proposal deadline (currently expected to be t=4s within a slot) as possible in order to be able to leave the "real" (CEX) market the maximum time to potentially move away from the "stale" DEX state, but without risking missing the deadline too much. We'd therefore start by having the SUAVE auction finalise e.g. 500 ms before the block deadline, then benchmark and adjust if needed. To achieve that, we might have to run a custom instantiation of the SUAVE blockchain running at a precise phase offset (500 ms) wrt Ethereum, e.g. exactly three SUAVE blocks per one Ethereum block (Rigil is currently sealing blocks at 4s block time (not sure about the phase), but using the non-time-precise Clique POA that will be subject to change by Flashbots soon).
 
 
 ## Project Setup
