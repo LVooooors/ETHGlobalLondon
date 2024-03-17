@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
-import {BidRegistry} from "../BidRegistry/BidRegistry.sol";
+import {BidRegistry} from "./BidRegistry.sol";
 
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
