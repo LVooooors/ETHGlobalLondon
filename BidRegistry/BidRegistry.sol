@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-//import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-// See https://github.com/Uniswap/v4-core/blob/main/src/types/PoolId.sol
-type PoolId is bytes32;
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 
 // Definition from https://github.com/Uniswap/v4-core/blob/main/src/types/BalanceDelta.sol
 type BalanceDelta is int256;
@@ -36,7 +34,7 @@ interface IUniswapV4 {
         returns (BalanceDelta delta);
 }
 
-contract EscrowRegistry {
+contract BidRegistry {
 
     address auctionMaster;
     address hookAddress;
