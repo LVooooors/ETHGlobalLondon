@@ -43,9 +43,9 @@ contract BidRegistry {
     // Signed data structure from SUAVE auction
     struct Bid {
         address v4Contract;
-        address bidder;
         PoolId pool;
         uint256 blockNumber;
+        address bidder;
         uint256 bidAmount;
     }
 
@@ -98,7 +98,7 @@ contract BidRegistry {
     }
 
     function claimPriorityOrdering(address v4Contract, PoolId id, address user, address token, uint256 amount, uint256 blockNumber, bytes memory sig) public returns (bool) {
-        bytes32 bidDigest = createBidDigest(v4Contract, user, id, 0, amount); // TODO: Replace the `0` by `blockNumber to enable block number check
+        bytes32 bidDigest = createBidDigest(v4Contract, user, id, blockNumber, amount); 
         require(recoverSigner(bidDigest, sig) == auctionMaster, "Auction master address mismatch");
         require(hasSufficientFundsToPayforOrdering(v4Contract, id, user, token, amount), "Insufficient funds");
 
@@ -168,7 +168,7 @@ contract BidRegistry {
     }
 
     function createBidDigest(address v4Contract, address user, PoolId id, uint256 blockNumber, uint256 amountOfBid) public pure returns (bytes32) {
-        Bid memory bidStruct = Bid(v4Contract, user, id, blockNumber, amountOfBid);
+        Bid memory bidStruct = Bid(v4Contract, id, blockNumber, user, amountOfBid);
         return keccak256(abi.encode(bidStruct));
     }
 
