@@ -18,3 +18,5 @@ docs/
 
 # Node modules
 node_modules/
+
+.vscode
