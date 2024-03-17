@@ -15,7 +15,7 @@ contract SwapScript is Script {
     address constant POOL_MANAGER = address(0xE5dF461803a59292c6c03978c17857479c40bc46);
     address constant TOKEN1_ADDRESS = address(0xA47757c742f4177dE4eEA192380127F8B62455F5);
     address constant TOKEN2_ADDRESS = address(0xFDA93151f6146f763D3A80Ddb4C5C7B268469465);
-    address constant HOOK_ADDRESS = address(0x030418916cb8A600dc02d307204dD8828b3aA179);
+    address constant HOOK_ADDRESS = address(0x030e0A80f42E3b943a4599B6E3F1712214511386);
 
     // pool ID: 0x8d161374ff7aae0d75bd014d7210b0de3d0ad9ff6fcb914d61292487765121f8
 
