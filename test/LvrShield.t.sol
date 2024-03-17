@@ -69,6 +69,7 @@ contract LvrShieldTest is Test, Deployers {
             ZERO_BYTES
         );
 
+        console.log(msg.sender);
         console.log(currency0.balanceOf(address(this)));
 
         bidRegistry.registerNewPool(address(0x0),poolId,Currency.unwrap(currency0),Currency.unwrap(currency1));
@@ -85,6 +86,7 @@ contract LvrShieldTest is Test, Deployers {
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 0);
 
         // Perform a test swap 1 //
+        console.log("Try to perform a test swap 1");
 
         bool zeroForOne = true;
         int256 amountSpecified = -20; // negative number indicates exact input swap!
@@ -96,18 +98,18 @@ contract LvrShieldTest is Test, Deployers {
             bidder: address(this)
         });
 
-        console.log(msg.sender);
         BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(bidData));
 
         assertEq(int256(swapDelta.amount0()), amountSpecified);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 1);
 
         // Perform a test swap 2 //
+        console.log("Try to perform a test swap 2");
 
         swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 2);
 
-        console.log("Two swaps successful");
+        console.log("Two swaps performed successfully");
     }
     
     // function testLiquidityHooks() public {
