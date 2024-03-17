@@ -52,7 +52,7 @@ contract LvrShield is BaseHook {
             // If yes, check if it won the auction - or revert
 
             address v4ContractHookAddress = address(this);
-            BidRegistry bidRegistry = BidRegistry(0x48A185C1a1FEca71330240E4dbbF523C32BA2Ff5); // TODO: Make dynamic
+            BidRegistry bidRegistry = BidRegistry(0xa43e520783230a2347946EAC7946A92a8379781c); // TODO: Make dynamic
             // BidRegistry bidRegistry = new BidRegistry(0xA47757c742f4177dE4eEA192380127F8B62455F5, address(this)); // TODO: Make dynamic
             address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
 

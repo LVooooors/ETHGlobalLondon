@@ -154,9 +154,9 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 - Token1 LVRST1: https://sepolia.arbiscan.io/token/0xa47757c742f4177de4eea192380127f8b62455f5
 - Token2 LVRST2: https://sepolia.arbiscan.io/token/0xfda93151f6146f763d3a80ddb4c5c7b268469465
-- SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xBb31e85bd7ABb995A020BDb91352c331368C8e19
-- BidRegistry: https://sepolia.arbiscan.io/address/0xccf033a3ac520432c0ade7a3765a00087e2ec3e5
-- LvrShield hook: https://sepolia.arbiscan.io/address/0x030418916cb8A600dc02d307204dD8828b3aA179
+- SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/????????????????
+- BidRegistry: https://sepolia.arbiscan.io/address/0xa43e520783230a2347946EAC7946A92a8379781c (cf. LvrShield.sol)
+- LvrShield hook: https://sepolia.arbiscan.io/address/0x030e0A80f42E3b943a4599B6E3F1712214511386
 
 
 ## Hackathon Observations
@@ -167,7 +167,9 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Limitations & Future Work
 
-- Block number needs to be re-enabled; cross-network time-syncing is non-trivial
+- Block number checks per pool-top-of-block auction winner checks needs to be re-enabled; disabled currently as:
+  - Uniswap v4 isn't deployable to Ethereum (Sepolia) due to contract storage out of gas issues, so we temporarily use a fast-blocktime L2 (Arbitrum Sepolia) for testing
+  - Getting cross-network time-syncing (precise phase offset) right is non-trivial, in particular with the currently deploye Clique PoA on SUAVE; it will probably require a re-instantiation of SUAVE, too
 - Support special zero-value bid type (towards unlocking a potentially stuck DEX during low-traffic periods)
 
 
