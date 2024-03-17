@@ -15,6 +15,16 @@ https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
 
 - Achieve a mechanism that would lead to redistributing a maximum amount of LVR MEV back to LPs without rendering the DEX unresponsive or otherwise unattractive
 
+### High level
+
+Fixing LVR (loss versus rebalancing, esp. wrt CEX) in Uniswap v4 pools works by requiring arbitrageurs to bid for first transaction rights for a particular pool they are attempting extra MEV from. Fees collected from auctioning first execution rights are then redistributed back to LPs by donating to the pools the fees were collected from.
+
+We achieve this with v4 hooks that utilise external SUAVE calls to run credible second-bid (Vickery) auctions for top-of-block swap rights.
+
+Specifically, SUAVE trusted execution environments run credible auctions for any chain where bidders submit private bids close to block creation time of the chain they want to execute an arb on. Payment for the bids is provided ahead of time to a contract which acts as a deposit registry. The contract stores funds for Arbers allowing them to bid on multiple auctions on different pools without explicitly providing a different deposits each time. Funds are only taken from Arber deposits when they win the right to have preferential transaction inclusion in a block and donated to the LPs of the Pool.
+
+The SUAVE auction resolves quickly providing a signed message which can then be passed to the Uniswap V4 pool as additional hookData. A prehook call then verifies the validity of the signed data and compares it to the swap that has been submitted. If valid, an execution ordering condition is imposed on sucessful execution of transactions for this pool imposing ordering on block builders.
+
 ### Assumptions
 
 - Block builders will bundle (knapsack problem) mempool transactions into an ordering that actually puts the special arb-swap transaction from the auction winner first within all pool transactions for said block ("pool-top-of-block") because it's the only ordering that doesn't lead to a revert
