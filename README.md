@@ -2,7 +2,7 @@
 
 ## tl;dr:
 
-We fix LVR in Uniswap via v4 hooks using external SUAVE calls for credible second-bid (Vickery) auctions for top-of-block arb-swap rights, redistributing the profit to the LPs.
+We fix LVR (loss versus rebalancing, esp. wrt CEX) in Uniswap v4 pools by distributing the arbitrage MEV back to LPs. We achieve this with v4 hooks that utilise external SUAVE calls to run credible second-bid (Vickery) auctions for top-of-block swap rights.
 
 ![alt text](image.png)
 
@@ -133,6 +133,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Hackathon Deployment
 
+- Token1 LVRST1: https://sepolia.arbiscan.io/token/0xa47757c742f4177de4eea192380127f8b62455f5
+- Token2 LVRST2: https://sepolia.arbiscan.io/token/0xfda93151f6146f763d3a80ddb4c5c7b268469465
 - SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0xBb31e85bd7ABb995A020BDb91352c331368C8e19
 - BidRegistry: https://sepolia.arbiscan.io/address/0xccf033a3ac520432c0ade7a3765a00087e2ec3e5
 - LvrShield hook: https://sepolia.arbiscan.io/address/0x030418916cb8A600dc02d307204dD8828b3aA179
@@ -151,14 +153,26 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Prizes/Bounties
 
+### Uniswap Foundation
+
+Bounty tracks:
+- Hooks & External Integrations
+  - External calls to SUAVE for credible second-bid auctioning from within a v4 before-swap hook
+  - Top-of-block (per pool) logic via a v4 after-swap hook
+  - Submitted as https://uniswaphooks.com/hooks/hook/d96453a2-14ce-4172-ac48-5279e4257e48 (under review)
+
 ### Flashbots
 
-SUAVE.
+Bounty tracks:
+- Offchain Auction Protocol
+  - Second-bid (Vickery) auction for top-of-block per v4 pool
+- Most Unique Offchain App
+  - HTTP requests to align SUAVE with v4's settlement layer (e.g. Arbitrum Sepolia)
 
 ### Nethermind
 
-SUAVE & MEV.
-
-### Uniswap
-
-SUAVE v4 hooks.
+Bounty tracks: 
+- MEV innovation
+  - Auction mechanism to redistribute parts of MEV (parts of LVR) back to pool LPs
+- Institutional blockchain solutions
+  - Make LP-ing on a DEX more attractive for sophisticated players able to follow CEX price feeds in near-time and reflect their EV in the (sealed second-bid) auction bidding strategy when bidding for top-of-block rights — while making LP-ing more equitable and predictive overall
