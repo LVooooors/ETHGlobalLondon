@@ -8,6 +8,7 @@ import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "v4-core/src/test/PoolDonateTest.sol";
+import {BidRegistry} from "../src/BidRegistry.sol";
 import {LvrShield} from "../src/LvrShield.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
@@ -30,6 +31,8 @@ contract LvrShieldScript is Script {
         // Deploy the hook using CREATE2
         vm.broadcast();
         LvrShield lvrShield = new LvrShield{salt: salt}(IPoolManager(address(ARBITRUM_SEPOLIA_POOLMANAGER)));
+        // lvrShield.setBidRegistry()
+
         require(address(lvrShield) == hookAddress, "LvrShieldScript: hook address mismatch");
     }
 }

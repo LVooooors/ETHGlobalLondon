@@ -15,6 +15,7 @@ import {Constants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {LvrShield} from "../src/LvrShield.sol";
+import {BidRegistry} from "../src/BidRegistry.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
@@ -43,6 +44,7 @@ contract LvrShieldScript is Script {
         // ----------------------------- //
         vm.broadcast();
         LvrShield lvrShield = new LvrShield{salt: salt}(manager);
+        // lvrShield.setBidRegistry()
         require(address(lvrShield) == hookAddress, "LvrShieldScript: hook address mismatch");
 
         // Additional helpers for interacting with the pool

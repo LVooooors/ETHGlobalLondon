@@ -78,7 +78,7 @@ contract LvrShield is BaseHook {
             // require(bidData.bidder == msg.sender, "sender is not the winner"); // not needed as sig will fail otherwise
 
             require(BidRegistry(bidRegistry).claimPriorityOrdering(
-                v4ContractHookAddress, 
+                address(0x0), // TODO: Restore to v4ContractHookAddress
                 poolId, 
                 bidData.bidder,
                 feeToken, 

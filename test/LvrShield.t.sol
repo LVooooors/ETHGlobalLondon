@@ -15,6 +15,7 @@ import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {LvrShield} from "../src/LvrShield.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
 import {BidRegistry} from "../src/BidRegistry.sol";
+import {IERC20} from "../lib/v4-core/lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 
 // From SUAVE, for reference:
@@ -37,7 +38,7 @@ contract LvrShieldTest is Test, Deployers {
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
         Deployers.deployFreshManagerAndRouters();
-        Deployers.deployMintAndApprove2Currencies();
+        (currency0, currency1) = Deployers.deployMintAndApprove2Currencies();
 
         // Deploy the hook to an address with the correct flags
         uint160 flags = uint160(
@@ -47,7 +48,10 @@ contract LvrShieldTest is Test, Deployers {
             HookMiner.find(address(this), flags, type(LvrShield).creationCode, abi.encode(address(manager)));
 
         lvrShield = new LvrShield{salt: salt}(IPoolManager(address(manager)));
-        lvrShield.setBidRegistry(address(new BidRegistry(address(0x000000000000000000000000b56fdf7d1ea7d365f111b7e48f52f91087e54c40), address(lvrShield))));
+
+        BidRegistry bidRegistry = new BidRegistry(address(0x0000000000000000000000008a12b5ecfd70e45e916cf8b726592703e0503586), address(lvrShield));
+
+        lvrShield.setBidRegistry(address(bidRegistry));
         
         require(address(lvrShield) == hookAddress, "LvrShieldTest: hook address mismatch");
 
@@ -64,6 +68,15 @@ contract LvrShieldTest is Test, Deployers {
             IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10 ether),
             ZERO_BYTES
         );
+
+        console.log(currency0.balanceOf(address(this)));
+
+        bidRegistry.registerNewPool(address(0x0),poolId,Currency.unwrap(currency0),Currency.unwrap(currency1));
+        IERC20(Currency.unwrap(currency0)).approve(address(bidRegistry), UINT256_MAX);
+        bidRegistry.depositFunds(address(0x0), poolId, address(this), address(0x0), 500000);
+        console.log(IERC20(Currency.unwrap(currency0)).balanceOf(address(this)));
+        // IERC20(Currency.unwrap(currency0)).balanceOf(address(bidRegistry));
+
     }
 
     function testLvrShieldHooks() public {
@@ -74,12 +87,13 @@ contract LvrShieldTest is Test, Deployers {
         // Perform a test swap 1 //
 
         bool zeroForOne = true;
-        int256 amountSpecified = -20000; // negative number indicates exact input swap!
+        int256 amountSpecified = -20; // negative number indicates exact input swap!
         BidData memory bidData = BidData({
             blockNumber: 2134116, 
             bidAmount: 2000000000000000, 
             sig: hex'fcd8905495f10f76e023b7f6f4d358a4ea6b8ca087897755a5545e997a8bc77d32c3c52eb5ec9d53efc229676ef8482c5a662c77cd354a6922a9e0a834f8f50000',
-            bidder: 0x2f11299cb7d762F01b55EEa66f79e4cB02F02786
+            // bidder: 0x2f11299cb7d762F01b55EEa66f79e4cB02F02786
+            bidder: address(this)
         });
 
         console.log(msg.sender);
