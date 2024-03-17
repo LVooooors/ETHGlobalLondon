@@ -23,6 +23,7 @@ https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
   - Timing needs to be in sync between the settlement layer and SUAVE
   - If no traffic/interest, no bid will be submitted and the DEX will be blocked for a block - but this will result in a larger deviation from the real price, increasing the LVR value and increasing the chances that an actor would submit a bid
   - If still no traffic, we could run an altruistic bot to every now and then submit a special zero-value bid to unlock the DEX
+- Given sufficient "critical mass", the credible second-bid auction will lead to most of the LVR EV being reflected in the auction proceeds, therefore making execution more equitable and closer to a CEX experience
 
 
 ## Project Setup
