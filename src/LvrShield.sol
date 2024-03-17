@@ -42,16 +42,22 @@ contract LvrShield is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData, BidRegistry escrowRegistry, address v4ContractHookAddress, address feeToken)
+    function beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData)
         external
+        override
         returns (bytes4)
     {
         // Check if top of block for this pair
         if (blockSwapCounter[key.toId()][block.number]==0) {
             // If yes, check if it won the auction - or revert
+
+            address v4ContractHookAddress = address(this);
+            BidRegistry bidRegistry = BidRegistry(0xcCf033a3Ac520432c0adE7a3765a00087E2EC3e5); // TODO: Make dynamic
+            address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
+
             PoolId poolId = key.toId();
 
-            require(escrowRegistry.claimPriorityOrdering(v4ContractHookAddress, poolId, sender, feeToken, uint256(swapParams.amountSpecified), block.number, hookData), "This is a top of block swap but it wasn't the auction winner");
+            require(bidRegistry.claimPriorityOrdering(v4ContractHookAddress, poolId, sender, feeToken, uint256(swapParams.amountSpecified), block.number, hookData), "This is a top of block swap but it wasn't the auction winner");
         }
         return BaseHook.beforeSwap.selector;
     }
