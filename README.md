@@ -165,6 +165,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
 ## Hackathon Deployment
 
+### Primary: Arbitrum
+
 - Token1 LVRST1: https://sepolia.arbiscan.io/token/0xa47757c742f4177de4eea192380127f8b62455f5
 - Token2 LVRST2: https://sepolia.arbiscan.io/token/0xfda93151f6146f763d3a80ddb4c5c7b268469465
 - BidRegistry: https://sepolia.arbiscan.io/address/0xa43e520783230a2347946EAC7946A92a8379781c (cf. LvrShield.sol)
@@ -172,11 +174,17 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 - PoolID: `0xcc8fda3516a2362da0bc1e5a33ccbf8913616bc400cac3d7ae6e0e9dc5097834`
 - SUAVE contract: https://explorer.rigil.suave.flashbots.net/address/0x54a4dDa9CE124774aEaEDb9056fD14f98b55AFFC
 
+### Secondary: Chiliz
+
+- Token1 LVRST1: https://testnet.chiliscan.com/address/0xFDA93151f6146f763D3A80Ddb4C5C7B268469465
+- Token2 LVRST2: https://testnet.chiliscan.com/address/0xf64aC019e25d8a51AB1284920A75E5C342291786
+
 
 ## Hackathon Observations
 
 - Arbitrum-Sepolia RPC sometimes throws this error: `It looks like you're trying to fork from an older block with a non-archive node which is not supported. Please try to change your RPC url to an archive node if the issue persists.`. Workaround: Just re-run the deployment script.
-- https://github.com/Uniswap/docs/pull/676 
+- Uniswap docs: https://github.com/Uniswap/docs/pull/676 (URL fix).
+- Chiliz Spicy requires an older solidity version (we used 0.8.0), legacy (non-1559) tx, and doesn't seem to support CREATE2 which is our dependency (for Uniswap v4 hook addressing); deployment gas fees seem quite high, too.
 
 
 ## Limitations & Future Work
@@ -224,4 +232,4 @@ Bountry tracks:
 
 Bountry tracks:
 - Pool Prize
-  - Spicy deployment
+  - Spicy Chiliz testnet deployment
