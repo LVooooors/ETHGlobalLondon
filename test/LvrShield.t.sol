@@ -60,7 +60,7 @@ contract LvrShieldTest is Test, Deployers {
 
         bool zeroForOne = true;
         int256 amountSpecified = -1e18; // negative number indicates exact input swap!
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES); // TODO: Insert test SUAVE signature here, as hookData
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES); // TODO: Insert valid test SUAVE signature here (as hookData)
 
         assertEq(int256(swapDelta.amount0()), amountSpecified);
         assertEq(lvrShield.blockSwapCounter(poolId, block.number), 1);

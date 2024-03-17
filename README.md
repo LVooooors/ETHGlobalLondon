@@ -1,38 +1,26 @@
-# ETHGlobalLondon
+# LVooooors @ ETHGlobalLondon 2024
 
-### **A template for writing Uniswap v4 Hooks 🦄**
+## tl;dr:
 
-[`Use this Template`](https://github.com/uniswapfoundation/v4-template/generate)
+We fix LVR in Uniswap via v4 hooks using external SUAVE calls for credible second-bid auctions for top-of-block arb-swap rights, redistributing the profit to the LPs.
 
-1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
-2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
 
-<details>
-<summary>Updating to v4-template:latest</summary>
+## Project Setup
 
-This template is actively maintained -- you can update the v4 dependencies, scripts, and helpers: 
-```bash
-git remote add template https://github.com/uniswapfoundation/v4-template
-git fetch template
-git merge template/main <BRANCH> --allow-unrelated-histories
-```
-
-</details>
-
----
-
-## Set up
-
-*requires [foundry](https://book.getfoundry.sh)*
+Requires [foundry](https://book.getfoundry.sh):
 
 ```
 forge install
-forge test
 ```
 
-### Local Development (Anvil)
+## Development and Testing
 
-Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
+### Local Unit Tests
+
+See [./test](./test), run with `forge test`.
+
+
+### Anvil
 
 ```bash
 # start anvil with TSTORE support
@@ -46,56 +34,69 @@ forge script script/Anvil.s.sol \
     --broadcast
 ```
 
-<details>
-<summary><h3>Testnets</h3></summary>
 
-NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. **It is recommend to use local testing instead**
+### Testnet Deployment
 
-~~For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.~~
+Note: Both Ethereum Goerli and Ethereum Sepolia are NOT supported by Uniswap v4 currently.
 
-~~The relevant addresses for testing on Goerli are the ones below~~
+However, we were able to deploy our hook, create a pool, add liquidity and swap successfully using Arbitrum Sepolia. 
 
-```bash
-POOL_MANAGER = 0x0
-POOL_MODIFY_POSITION_TEST = 0x0
-SWAP_ROUTER = 0x0
-```
-
-Update the following command with your own private key:
+Further testnets presumed to be functional (as of 17 March 2024):
 
 ```
-forge script script/00_Counter.s.sol \
---rpc-url https://rpc.ankr.com/eth_goerli \
---private-key [your_private_key_on_goerli_here] \
+https://sepolia-rollup.arbitrum.io/rpc
+- PoolManager deployed to 0xE5dF461803a59292c6c03978c17857479c40bc46
+- PoolModifyLiquidityTest deployed to 0xd962b16F4ec712D705106674E944B04614F077be
+- PoolSwapTest deployed to 0x5bA874E13D2Cf3161F89D1B1d1732D14226dBF16
+
+https://sepolia.base.org
+- PoolManager deployed to 0xd962b16F4ec712D705106674E944B04614F077be
+- PoolModifyLiquidityTest deployed to 0x5bA874E13D2Cf3161F89D1B1d1732D14226dBF16
+- PoolSwapTest deployed to 0x60AbEb98b3b95A0c5786261c1Ab830e3D2383F9e
+
+https://sepolia.optimism.io
+- PoolManager deployed to 0xb673AE03413860776497B8C9b3E3F8d4D8745cB3
+- PoolModifyLiquidityTest deployed to 0x862Fa52D0c8Bca8fBCB5213C9FEbC49c87A52912
+- PoolSwapTest deployed to 0x30654C69B212AD057E817EcA26da6c5edA32E2E7
+
+https://rpc.ankr.com/polygon_mumbai
+- PoolManager deployed to 0xf3A39C86dbd13C45365E57FB90fe413371F65AF8
+- PoolModifyLiquidityTest deployed to 0xFDABa2b9C369C25f5834334612c0855497942788
+- PoolSwapTest deployed to 0x76870DEbef0BE25589A5CddCe9B1D99276C73B4e
+
+https://rpc.public.zkevm-test.net
+- PoolManager deployed to 0x615bCf3371F7daF8E8f7d26db10e12F0F4830C94
+- PoolModifyLiquidityTest deployed to 0x3A0c2cF7c40A7B417AE9aB6ccBF60e86d8437395
+- PoolSwapTest deployed to 0x3D5e538D212b05bc4b3F70520189AA3dEA588B1E
+```
+
+To deploy to a testnet, run scripts from [./script](./script), e.g.:
+```
+forge script script/00_BidRegistry.s.sol \
+--rpc-url https://sepolia-rollup.arbitrum.io/rpc \
+--private-key [your_private_key_on_separbitrum_here] \
 --broadcast
 ```
 
-### *Deploying your own Tokens For Testing*
+#### *Deploying your own Tokens For Testing*
 
-Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. We recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. See deployment commands below
+Because v4 is still in testing mode, most networks don't have liquidity pools live on v4 testnets. We recommend launching your own test tokens and expirementing with them that:
 
 ```
 forge create script/mocks/mUNI.sol:MockUNI \
 --rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
+--private-key [your_private_key_here]
 ```
 
 ```
 forge create script/mocks/mUSDC.sol:MockUSDC \
 --rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
+--private-key [your_private_key_here]
 ```
 
-</details>
+## Troubleshooting
 
----
-
-<details>
-<summary><h2>Troubleshooting</h2></summary>
-
-
-
-### *Permission Denied*
+### Permission Denied
 
 When installing dependencies with `forge install`, Github may throw a `Permission Denied` error
 
@@ -103,7 +104,7 @@ Typically caused by missing Github SSH keys, and can be resolved by following th
 
 Or [adding the keys to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent), if you have already uploaded SSH keys
 
-### Hook deployment failures
+### Hook Deployment Failures
 
 Hook deployment failures are caused by incorrect flags or incorrect salt mining
 
@@ -115,11 +116,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
     * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
         * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
 
-</details>
 
----
-
-Additional resources:
+### Additional Resources
 
 [v4-periphery](https://github.com/uniswap/v4-periphery) contains advanced hook implementations that serve as a great reference
 
@@ -127,3 +125,28 @@ Additional resources:
 
 [v4-by-example](https://v4-by-example.org)
 
+
+## Hackathon Observations
+
+- Arbitrum-Sepolia RPC sometimes throws this error: `It looks like you're trying to fork from an older block with a non-archive node which is not supported. Please try to change your RPC url to an archive node if the issue persists.`. Workaround: Just re-run the deployment script.
+- https://github.com/Uniswap/docs/pull/676 
+
+
+## Limitations & Future Work
+
+- Block number needs to be re-enabled; cross-network time-syncing is non-trivial.
+
+
+## Prizes/Bounties
+
+### Flashbots
+
+SUAVE.
+
+### Nethermind
+
+SUAVE & MEV.
+
+### Uniswap
+
+SUAVE v4 hooks.
