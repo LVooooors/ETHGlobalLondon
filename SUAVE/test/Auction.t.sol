@@ -70,4 +70,11 @@ contract AuctionTest is Test, SuaveEnabled {
         ));
         console.logBytes(res2);
     }
+
+    function testBeaconSlotToBlockNum() public {
+        address registry = 0x7b6aceC5eA36DD5ef5b0639B8C1d0Dab59DdcF03;
+        string memory settlementChainRpc = "https://goerli.gateway.tenderly.co";
+        Auction auction = new Auction(registry, settlementChainRpc); 
+        auction.slotToBlockNumber(8651711);
+    }
 }

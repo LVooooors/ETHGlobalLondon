@@ -1,6 +1,5 @@
 pragma solidity ^0.8.9;
 
-import "";
 import "./lib/SuaveContract.sol";
 import "lib/solady/src/utils/LibString.sol";
 import "lib/solady/src/utils/JSONParserLib.sol";
@@ -37,6 +36,7 @@ contract Auction is SuaveContract {
         bytes sig
     );
 
+    uint constant BEACON_MAINNET_GENISIS_TIME = 1606824023;
     string constant PK_NAMESPACE = "auction:v0:pksecret";
     string constant BID_NAMESPACE = "auction:v0:bids";
     address public immutable registry;
@@ -46,7 +46,7 @@ contract Auction is SuaveContract {
     bool public isInitialized;
     Suave.DataId internal pkBidId;
     address[] public genericPeekers = [0xC8df3686b4Afb2BB53e60EAe97EF043FE03Fb829]; // todo: rm after new update (this exposes to anyone)
-
+    uint maxSettledAuctionBlock;
 
     // ⛓️ EVM Methods
 
@@ -72,6 +72,7 @@ contract Auction is SuaveContract {
 
     // todo: protect it
     function settleAuctionCallback(Bid memory winningBid, bytes memory sig) public {
+        maxSettledAuctionBlock = winningBid.blockNumber;
         emit AuctionSettled(
             winningBid.pool,
             winningBid.poolId, 
@@ -133,7 +134,7 @@ contract Auction is SuaveContract {
             '{"to": "', LibString.toHexStringChecksummed(registry), 
             '","data": "', LibString.toHexString(callData),'"}'
         ));
-        bytes memory response = eth_call(callParam);
+        bytes memory response = ethCall(callParam);
 
         JSONParserLib.Item memory parsedRes = string(response).parse();
         string memory result = string(parsedRes.at('"result"').value());
@@ -142,7 +143,7 @@ contract Auction is SuaveContract {
         return boolRes;
     }
 
-    function eth_call(string memory callParam) public view returns (bytes memory) {
+    function ethCall(string memory callParam) public view returns (bytes memory) {
         bytes memory body = abi.encodePacked(
             '{"jsonrpc":"2.0","method":"eth_call","params":[', 
             callParam, ', "latest"'
@@ -158,17 +159,32 @@ contract Auction is SuaveContract {
         return doHttpRequest(request);
     }
 
+    function slotToBlockNumber(uint slot) public view returns (uint64) {
+        string memory beaconBaseUrl = "https://docs-demo.quiknode.pro/eth/v2/beacon/blocks/";
+        string memory url = string(abi.encodePacked(beaconBaseUrl, LibString.toString(slot)));
+        Suave.HttpRequest memory request;
+        request.method = "GET";
+        request.url = url;
+        request.withFlashbotsSignature = false;
+        request.headers = new string[](1);
+        request.headers[0] = "Content-Type: application/json";
+        bytes memory response = doHttpRequest(request);
+        JSONParserLib.Item memory parsedRes = string(response).parse();
+        string memory blockNumber = string(parsedRes.at('"data"').at('"message"').at('"body"').at('"execution_payload"').at('"block_number"').value());
+        uint blockNum = JSONParserLib.parseUint(trimStrEdges(blockNumber));
+        return uint64(blockNum);
+    }
+
     function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
         (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
-        console.log(success);
-        console.logBytes(data);
+        // console.log(success);
+        // console.logBytes(data);
         crequire(success, string(data));
         return abi.decode(data, (bytes));
     }
 
-    // todo: dont setttle auction twice
-    function settleAuction(address pool, bytes32 poolId, uint64 blockNumber) public returns (bytes memory) {
-        // todo: condition to check if the auction should be over
+    function settleAuction(address pool, bytes32 poolId, uint64 blockNumber, uint nextSlot) public returns (bytes memory) {
+        checkForValidSettlement(nextSlot, blockNumber);
         Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
         (Bid memory winningBid) = bids.length == 0
             ? Bid(pool, poolId, blockNumber, address(0), 0)
@@ -180,7 +196,19 @@ contract Auction is SuaveContract {
             this.settleAuctionCallback.selector, 
             winningBid,
             sig
-        );      
+        );
+    }
+
+    function checkForValidSettlement(uint nextSlot, uint settlementBlock) internal view {
+        require(settlementBlock > maxSettledAuctionBlock);
+        uint nextBlockNum = slotToBlockNumber(nextSlot);
+        require(nextBlockNum == settlementBlock, "Wrong slot");
+        uint nextSlotTimestamp = timestampForSlot(nextSlot);
+        require(block.timestamp < nextSlotTimestamp-10, "Slot not closed yet");
+    }
+
+    function timestampForSlot(uint slot) public pure returns (uint) {
+        return BEACON_MAINNET_GENISIS_TIME + slot * 12;
     }
 
     function signBid(Bid memory bid) public returns (bytes memory sig) {
@@ -252,7 +280,7 @@ contract Auction is SuaveContract {
 
 }
 
-// Utils 
+// Utils
 
 function getAddressForPk(string memory pk) returns (address) {
     bytes32 digest = keccak256(abi.encode("yo"));
