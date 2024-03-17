@@ -1,5 +1,6 @@
 pragma solidity ^0.8.9;
 
+import "";
 import "./lib/SuaveContract.sol";
 import "lib/solady/src/utils/LibString.sol";
 import "lib/solady/src/utils/JSONParserLib.sol";
@@ -104,6 +105,7 @@ contract Auction is SuaveContract {
         uint bidAmount
     ) public returns (bytes memory) {
         address bidder = msg.sender;
+        require(bidAmount > 0, "Bid amount should be greater than zero");
         require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
         storeBid(Bid(pool, poolId, blockNumber, bidder, bidAmount));
 
@@ -135,7 +137,6 @@ contract Auction is SuaveContract {
 
         JSONParserLib.Item memory parsedRes = string(response).parse();
         string memory result = string(parsedRes.at('"result"').value());
-        console.log(result);
         bool boolRes = LibString.endsWith(result, '1"'); // todo there is a better way
 
         return boolRes;
@@ -147,7 +148,6 @@ contract Auction is SuaveContract {
             callParam, ', "latest"'
             '],"id":1}'
         );
-        /* solhint-enable */
         Suave.HttpRequest memory request;
         request.method = "POST";
         request.body = body;
@@ -166,6 +166,7 @@ contract Auction is SuaveContract {
         return abi.decode(data, (bytes));
     }
 
+    // todo: dont setttle auction twice
     function settleAuction(address pool, bytes32 poolId, uint64 blockNumber) public returns (bytes memory) {
         // todo: condition to check if the auction should be over
         Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
@@ -184,13 +185,9 @@ contract Auction is SuaveContract {
 
     function signBid(Bid memory bid) public returns (bytes memory sig) {
         string memory pk = retreivePK();
-        // console.log(bid.pool);
-        // console.logBytes32(bid.poolId);
-        // console.log(uint(bid.blockNumber));
-        // console.log(bid.bidAmount);
         bytes32 digest = keccak256(abi.encode(bid));
-        console.log("here");
-        console.logBytes32(digest);
+        console.log("Digest:"); // todo: rm
+        console.logBytes32(digest); // todo: rm
         sig = Suave.signMessage(abi.encodePacked(digest), Suave.CryptoSignature.SECP256, pk);
     }
 
