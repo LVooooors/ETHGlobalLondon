@@ -1,3 +1,12 @@
+[submodule "SUAVE/lib/forge-std"]
+	path = SUAVE/lib/forge-std
+	url = https://github.com/foundry/forge-std
+[submodule "SUAVE/lib/suave-std"]
+	path = SUAVE/lib/suave-std
+	url = https://github.com/flashbots/suave-std
+[submodule "SUAVE/lib/solady"]
+	path = SUAVE/lib/solady
+	url = https://github.com/vectorized/solady
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
