@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
+import {EscrowRegistry} from "../../BidRegistry/bidregsitry.sol";
+
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -40,17 +42,17 @@ contract LvrShield is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
+    function beforeSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata hookData, EscrowRegistry escrowRegistry, address v4ContractHookAddress, address feeToken)
         external
         view
-        override
         returns (bytes4)
     {
         // Check if top of block for this pair
         if (blockSwapCounter[key.toId()][block.number]==0) {
             // If yes, check if it won the auction - or revert
-            // TODO
-            require(true, "This is a top of block swap but it wasn't the auction winner");
+            PoolId poolId = key.toId();
+
+            require(escrowRegistry.claimPriorityOrdering(v4ContractHookAddress, poolId, sender, feeToken, uint256(swapParams.amountSpecified), block.number, hookData), "This is a top of block swap but it wasn't the auction winner");
         }
         return BaseHook.beforeSwap.selector;
     }
