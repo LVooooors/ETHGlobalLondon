@@ -5,12 +5,18 @@ import "../lib/forge-std/src/Test.sol";
 import { Test, SuaveEnabled } from "../lib/suave-std/src/Test.sol";
 import { Auction } from "../contracts/Auction.sol";
 
+interface Cheatcodes {
+    function startPrank(address, address) external;
+    function stopPrank() external;
+}
+
 contract AuctionTest is Test, SuaveEnabled {
 
     address constant CSTORE = 0x0000000000000000000000000000000042020000;
+    Cheatcodes constant cheatcodes = Cheatcodes(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
 
     function testAuction() public {
-        address registry = 0xFfe8e2f2aA5BB81E13EDc3b5c51be045d97f1A1A;
+        address registry = 0x352CC6E83B37715414F65437fbddA45CC6a22054;
         string memory settlementChainRpc = "https://sepolia-rollup.arbitrum.io/rpc";
         Auction auction = new Auction(registry, settlementChainRpc); 
 
@@ -25,13 +31,21 @@ contract AuctionTest is Test, SuaveEnabled {
         bytes32 poolId = bytes32("");
         uint64 blockNumber = 3;
 
-        uint256[] memory bidAmounts = new uint256[](2);
+        uint256[] memory bidAmounts = new uint256[](3);
         bidAmounts[0] = 12;
         bidAmounts[1] = 200;
-        bytes memory res2 = auction.submitBid(pool, poolId, blockNumber, bidAmounts[0]);
-        address(auction).call(res2);
-        bytes memory res3 = auction.submitBid(pool, poolId, blockNumber, bidAmounts[1]);
-        address(auction).call(res2);
+        bidAmounts[2] = 50;
+        address[] memory addresses = new address[](3);
+        addresses[0] = address(1);
+        addresses[1] = address(2);
+        addresses[2] = address(3);
+
+        for (uint i = 0; i < bidAmounts.length; i++) {
+            cheatcodes.startPrank(addresses[i], tx.origin);
+            bytes memory res = auction.submitBid(pool, poolId, blockNumber, bidAmounts[i]);
+            address(auction).call(res);
+            cheatcodes.stopPrank();
+        }
 
         Auction.Bid[] memory bids = auction.fetchBids(pool, poolId, blockNumber);
         for (uint i = 0; i < bids.length; i++) {
@@ -42,11 +56,9 @@ contract AuctionTest is Test, SuaveEnabled {
         }
 
         // settleAuction
-        // address winner = address(2);
-        // bytes memory res4 = auction.settleAuction(pool, poolId, blockNumber);
-        // address(auction).call(res4);
-        // (bytes4 methodsig, Auction.Bid memory bid,) = abi.decode(res4, (bytes4, Auction.Bid, bytes));
-        
+        address winner = address(2);
+        bytes memory res4 = auction.settleAuction(pool, poolId, blockNumber, 0);
+        address(auction).call(res4);
 
     }
 

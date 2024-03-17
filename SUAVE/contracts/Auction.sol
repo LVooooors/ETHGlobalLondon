@@ -107,7 +107,7 @@ contract Auction is SuaveContract {
     ) public returns (bytes memory) {
         address bidder = msg.sender;
         require(bidAmount > 0, "Bid amount should be greater than zero");
-        require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
+        // require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
         storeBid(Bid(pool, poolId, blockNumber, bidder, bidAmount));
 
         return abi.encodeWithSelector(
@@ -177,8 +177,6 @@ contract Auction is SuaveContract {
 
     function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
         (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
-        // console.log(success);
-        // console.logBytes(data);
         crequire(success, string(data));
         return abi.decode(data, (bytes));
     }
@@ -214,8 +212,6 @@ contract Auction is SuaveContract {
     function signBid(Bid memory bid) public returns (bytes memory sig) {
         string memory pk = retreivePK();
         bytes32 digest = keccak256(abi.encode(bid));
-        console.log("Digest:"); // todo: rm
-        console.logBytes32(digest); // todo: rm
         sig = Suave.signMessage(abi.encodePacked(digest), Suave.CryptoSignature.SECP256, pk);
     }
 
@@ -238,7 +234,7 @@ contract Auction is SuaveContract {
     }
 
     function storeBid(Bid memory bid) internal {
-        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, bid.pool, bid.poolId));
+        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, bid.pool, bid.poolId, bid.blockNumber));
         address[] memory peekers = new address[](3);
         peekers[0] = address(this);
 		peekers[1] = Suave.FETCH_DATA_RECORDS;
@@ -252,7 +248,7 @@ contract Auction is SuaveContract {
         bytes32 poolId, 
         uint64 blockNumber
     ) public returns (Bid[] memory){
-        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, pool, poolId));
+        string memory namespace = string(abi.encodePacked(BID_NAMESPACE, pool, poolId, blockNumber));
         Suave.DataRecord[] memory dataRecords = Suave.fetchDataRecords(blockNumber, namespace);
         Bid[] memory bids = new Bid[](dataRecords.length);
         for (uint i = 0; i < dataRecords.length; i++) {
