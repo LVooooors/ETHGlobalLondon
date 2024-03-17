@@ -15,15 +15,18 @@ https://app.excalidraw.com/l/ZvFp528akJ/3OK2MBMiduH
 
 - Achieve a mechanism that would lead to redistributing a maximum amount of LVR MEV back to LPs without rendering the DEX unresponsive or otherwise unattractive
 
-### High level
+### Problem Statement & Motivation
 
-Fixing LVR (loss versus rebalancing, esp. wrt CEX) in Uniswap v4 pools works by requiring arbitrageurs to bid for first transaction rights for a particular pool they are attempting extra MEV from. Fees collected from auctioning first execution rights are then redistributed back to LPs by donating to the pools the fees were collected from.
+Fixing LVR (loss versus rebalancing, esp. wrt CEX) in Uniswap v4 pools works by requiring arbitrageurs (Arbers) to bid for first transaction rights in a block for a particular pool they are getting extra MEV from. Fees collected from auctioning first execution rights are then redistributed back to LPs by donating to the pools the MEV was collected from.
 
-We achieve this with v4 hooks that utilise external SUAVE calls to run credible second-bid (Vickery) auctions for top-of-block swap rights.
+We achieve this by using SUAVE: We run a SUAPP in a TEE to credibly offer private second-bid (Vickery) auctions for top-of-block swap rights. The winning bidder of the auction is furnished with a signed TEE attestation by the SUAPP which is then provided alongside the swap data to the Uniswap V4 pool. Preswap hooks check for the validity of this attestation and enforce appropriate ordering during the block building process.
 
-Specifically, SUAVE trusted execution environments run credible auctions for any chain where bidders submit private bids close to block creation time of the chain they want to execute an arb on. Payment for the bids is provided ahead of time to a contract which acts as a deposit registry. The contract stores funds for Arbers allowing them to bid on multiple auctions on different pools without explicitly providing a different deposits each time. Funds are only taken from Arber deposits when they win the right to have preferential transaction inclusion in a block and donated to the LPs of the Pool.
+### Solution
 
-The SUAVE auction resolves quickly providing a signed message which can then be passed to the Uniswap V4 pool as additional hookData. A prehook call then verifies the validity of the signed data and compares it to the swap that has been submitted. If valid, an execution ordering condition is imposed on sucessful execution of transactions for this pool imposing ordering on block builders.
+Our SUAVE trusted execution environments can now run credible auctions for any chain; bidders submit private bids in proximity to the block creation deadline of the chain they want to execute an arb swap on. Payment for the bids is provided ahead of time to a contract which acts as a deposit registry. The contract stores funds for Arbers allowing them to bid on multiple auctions on different pools without explicitly providing a different deposits each time. Funds are only taken from Arber deposits when they win the right to have preferential transaction inclusion in a block; such accumulating proceeds may then be re-distributed to the LPs of the pool, by anyone.
+
+The SUAVE auction resolves quickly, providing a signed message to the winner which can then be passed to the Uniswap V4 pool as additional hookData accompanying their swap transaction. A v4 pre-swap hook then verifies the validity of the signed message data and compares it to the swap that has been submitted. If valid, an execution ordering condition is imposed on successful execution of transactions for this pool, resulting in adequate ordering created by block builders.
+
 
 ### Assumptions
 
@@ -182,6 +185,7 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
   - Uniswap v4 isn't deployable to Ethereum (Sepolia) due to contract storage out of gas issues, so we temporarily use a fast-blocktime L2 (Arbitrum Sepolia) for testing
   - Getting cross-network time-syncing (precise phase offset) right is non-trivial, in particular with the currently deploye Clique PoA on SUAVE; it will probably require a re-instantiation of SUAVE, too
 - Support special zero-value bid type (towards unlocking a potentially stuck DEX during low-traffic periods)
+- Consider requiring an additional stake that can be slashed if a winning bidder doesn't actually provide a swap (on time), thus blocking the DEX for the block in question
 
 
 ## Prizes/Bounties
@@ -209,3 +213,15 @@ Bounty tracks:
   - Auction mechanism to redistribute parts of MEV (parts of LVR) back to pool LPs
 - Institutional blockchain solutions
   - Make LP-ing on a DEX more attractive for sophisticated players able to follow CEX price feeds in near-time and reflect their EV in the (sealed second-bid) auction bidding strategy when bidding for top-of-block rights — while making LP-ing more equitable and predictive overall
+
+### Arbitrum
+
+Bountry tracks:
+- Qualifying Arbitrum Submissions
+  - Arbitrum One (Sepolia) deployment
+
+### Chiliz
+
+Bountry tracks:
+- Pool Prize
+  - Spicy deployment
