@@ -69,16 +69,15 @@ contract LvrShield is BaseHook {
             // If yes, check if it won the auction - or revert
 
             address v4ContractHookAddress = address(this);
-            //BidRegistry bidRegistry = BidRegistry(0xa43e520783230a2347946EAC7946A92a8379781c); // TODO: Make dynamic
-            // BidRegistry bidRegistry = new BidRegistry(0xA47757c742f4177dE4eEA192380127F8B62455F5, address(this)); // TODO: Make dynamic
             address feeToken = 0xA47757c742f4177dE4eEA192380127F8B62455F5; // TODO: Make dynamic
 
             PoolId poolId = key.toId();
             BidData memory bidData = abi.decode(hookData, (BidData));
-            require(bidData.bidder == tx.origin, "tx.origin is not the auction winner"); // not needed as sig will fail otherwise
+            require(bidData.bidder == tx.origin, "tx.origin is not the auction winner");
+            // require(bidData.pool == v4ContractHookAddress, "incorrect pool address"); // TODO: Re-add
 
             require(BidRegistry(bidRegistry).claimPriorityOrdering(
-                address(0x0), // TODO: Restore to v4ContractHookAddress
+                v4ContractHookAddress,
                 poolId, 
                 bidData.bidder,
                 feeToken, 
