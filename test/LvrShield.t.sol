@@ -17,10 +17,9 @@ import {HookMiner} from "./utils/HookMiner.sol";
 import {BidRegistry} from "../src/BidRegistry.sol";
 import {IERC20} from "../lib/v4-core/lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
-
 // From SUAVE, for reference:
 struct BidData {
-    // address pool;
+    address pool;
     // bytes32 poolId;
     address bidder;
     uint64 blockNumber;
@@ -49,7 +48,7 @@ contract LvrShieldTest is Test, Deployers {
 
         lvrShield = new LvrShield{salt: salt}(IPoolManager(address(manager)));
 
-        BidRegistry bidRegistry = new BidRegistry(address(0x00000000000000000000000080b3247491dd7843e0bb85cb8a403fcbedcc2813), address(lvrShield));
+        BidRegistry bidRegistry = new BidRegistry(address(0x689866C124600A4F20AF82245EA00662Fca201DC), address(lvrShield)); // TODO: Use dynamic master key
 
         lvrShield.setBidRegistry(address(bidRegistry));
         
@@ -91,11 +90,12 @@ contract LvrShieldTest is Test, Deployers {
         bool zeroForOne = true;
         int256 amountSpecified = -20; // negative number indicates exact input swap!
         BidData memory bidData = BidData({
-            blockNumber: 2134116, 
-            bidAmount: 2000000000000000, 
-            sig: hex'fcd8905495f10f76e023b7f6f4d358a4ea6b8ca087897755a5545e997a8bc77d32c3c52eb5ec9d53efc229676ef8482c5a662c77cd354a6922a9e0a834f8f50000',
-            // bidder: 0x2f11299cb7d762F01b55EEa66f79e4cB02F02786
-            bidder: address(this)
+            pool: address(lvrShield),
+            blockNumber: 6033, 
+            bidAmount: 1000000000000000, 
+            sig: hex'e464c15169a97c46c2c5c86811f7974ddfe8c8ffc592fd983936ba20c7cd2dd56ea07126bdc69c4c83c9cb08fe687856cf2fbaa0fa457b3bfddae57d6449b16700',
+            // bidder: msg.sender // TODO: Re-add this value, dynamically 
+            bidder: 0x689866C124600A4F20AF82245EA00662Fca201DC
         });
 
         BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(bidData));

@@ -50,7 +50,7 @@ contract SwapScript is Script {
         bool zeroForOne = true;
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: zeroForOne,
-            amountSpecified: 3e18,
+            amountSpecified: 1e6,
             sqrtPriceLimitX96: zeroForOne ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT // unlimited impact
         });
 
@@ -59,9 +59,10 @@ contract SwapScript is Script {
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
 
-        bytes memory hookData = hex"b109d41a4f2a6bc531deb49ae7a44bb823bb1c80144a51232369975b8e8bec813207c1d41c4720eb9357989c91b288de0945b60dfe380b80dc665b998687917201"; // TODO: Use allowed sig
+        bytes memory hookData = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000179000000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000041e464c15169a97c46c2c5c86811f7974ddfe8c8ffc592fd983936ba20c7cd2dd56ea07126bdc69c4c83c9cb08fe687856cf2fbaa0fa457b3bfddae57d6449b1670000000000000000000000000000000000000000000000000000000000000000"; // TODO: Use allowed sig
 
         vm.broadcast();
+        // swapRouter.swap(pool, params, testSettings,  new bytes(0x0));
         swapRouter.swap(pool, params, testSettings, hookData);
     }
 }

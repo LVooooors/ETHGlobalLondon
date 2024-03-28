@@ -13,7 +13,7 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
 // From SUAVE, for reference:
 struct BidData {
-    // address pool;
+    address pool;
     // bytes32 poolId;
     address bidder;
     uint64 blockNumber;
@@ -73,7 +73,7 @@ contract LvrShield is BaseHook {
 
             PoolId poolId = key.toId();
             BidData memory bidData = abi.decode(hookData, (BidData));
-            require(bidData.bidder == tx.origin, "tx.origin is not the auction winner");
+            // require(bidData.bidder == tx.origin, "tx.origin is not the auction winner");
             // require(bidData.pool == v4ContractHookAddress, "incorrect pool address"); // TODO: Re-add
 
             require(BidRegistry(bidRegistry).claimPriorityOrdering(
