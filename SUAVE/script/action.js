@@ -18,9 +18,9 @@ task('action')
         const AuctionContractA = new SuaveContract(suaveAuctionAdd, suaveAuctionABI, suaveSignerA)
         const AuctionContractB = new SuaveContract(suaveAuctionAdd, suaveAuctionABI, suaveSignerB)
 
-        const pool = '0x030eF8F38E149C7954B481208a2305F9D6B82E8e'
-        const poolId = '0xcc8fda3516a2362da0bc1e5a33ccbf8913616bc400cac3d7ae6e0e9dc5097834'
-        const blockNumber = 6032
+        const pool = '0x030C65FFc979C367e58DE454bBB5841bF7aF8573'
+        const poolId = '0x3d28010ea8d317e6253d9657546ec5a268aabe64f811da773363a0cfdce4cdfd'
+        const blockNumber = 6033
         const bidAmounts = [
             ethers.utils.parseEther('0.001'),
             ethers.utils.parseEther('0.007')
@@ -49,7 +49,7 @@ task('action')
             console.log('✅ Submitting bid B suceeded')
         }
 
-        // await sleep(3000)
+        await sleep(3000)
 
         console.log("\n👀 Settling the auction")
         // todo: reenable settlement checking - slot param
@@ -62,23 +62,15 @@ task('action')
             console.log('✅ Auction settlement successful')
         }
 
-        // Parse the result
         const decoded = AuctionContractA.interface.parseTransaction({
             data: resAuction.confidentialComputeResult
         });
         console.log(`\n✨ Auction winner: ${decoded.args[0][3]} with bid amount ${decoded.args[0][4]}`)
+        const signature = decoded.args[1]
+        const bidAmount = decoded.args[0][4]
+        const bidder = decoded.args[0][3]
         console.log(`Signature: ${decoded.args[1]}`)
-
-        process.exit(1)
         
-        const encodedParams = ethers.utils.defaultAbiCoder.encode(
-            ['uint64', 'uint256', 'bytes'],
-            [decoded.args[0][2], decoded.args[0][4], decoded.args[1]],
-        )
-        console.log([decoded.args[0][2], decoded.args[0][4], decoded.args[1]])
-            
-        
-        // SWAP 
 
         const arbRpc = 'https://sepolia-rollup.arbitrum.io/rpc'
         const uniRouter = '0x5bA874E13D2Cf3161F89D1B1d1732D14226dBF16'
@@ -88,7 +80,22 @@ task('action')
         const walletA = new ethers.Wallet(rigilPKA, provider)
         const walletB = new ethers.Wallet(rigilPKB, provider)
 
-        const RouterContract = new ethers.Contract(uniRouter, uniRouterABI, walletB)
+        const encodedParams = ethers.utils.AbiCoder.prototype.encode(
+            [{
+                components: [
+                    {type: 'address', name: 'bidder'},
+                    {type: 'uint64', name: 'blockNumber'},
+                    {type: 'uint256', name: 'amount'},
+                    {type: 'bytes', name: 'signature'}
+                ],
+                type: 'tuple'
+            }],
+            [[bidder, blockNumber, bidAmount, signature]],
+        )
+
+        const w = bidder == walletA.address ? walletA : walletB
+
+        const RouterContract = new ethers.Contract(uniRouter, uniRouterABI, w)
 
         const res = await RouterContract.swap(
             [
@@ -96,7 +103,7 @@ task('action')
                 '0xFDA93151f6146f763D3A80Ddb4C5C7B268469465',
                 4000,
                 10,
-                '0x030eF8F38E149C7954B481208a2305F9D6B82E8e'
+                pool
             ],
             [
                 true,
@@ -111,7 +118,7 @@ task('action')
             encodedParams,
             { gasLimit: 20000000 }
         )
-        console.log(await res.wait())
+        console.log(res)
 	})
 
 
