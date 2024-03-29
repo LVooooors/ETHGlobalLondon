@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
 import "./lib/SuaveContract.sol";
@@ -45,15 +46,12 @@ contract Auction is SuaveContract {
     uint64 public lastAuctionBlock;
     bool public isInitialized;
     Suave.DataId internal pkBidId;
-    address[] public genericPeekers = [0xC8df3686b4Afb2BB53e60EAe97EF043FE03Fb829]; // todo: rm after new update (this exposes to anyone)
+    address[] public genericPeekers = [0xC8df3686b4Afb2BB53e60EAe97EF043FE03Fb829]; // todo: update after suave update (this exposes storage to everyone)
     bool public settlementTimeGuardEnabled;
 
     // ⛓️ EVM Methods
 
-    constructor(
-        address _registry, 
-        string memory _settlementChainRpc
-    ) {
+    constructor(address _registry, string memory _settlementChainRpc) {
         settlementChainRpc = _settlementChainRpc;
         registry = _registry;
     }
@@ -122,6 +120,28 @@ contract Auction is SuaveContract {
         );
     }
 
+    function settleAuction(
+        address pool, 
+        bytes32 poolId, 
+        uint64 blockNumber, 
+        uint nextSlot
+    ) public returns (bytes memory) {
+        if (settlementTimeGuardEnabled)
+            checkForValidSettlement(nextSlot, blockNumber);
+
+        Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
+        (Bid memory winningBid) = bids.length == 0
+            ? Bid(pool, poolId, blockNumber, address(0), 0)
+            : findWinningBid(bids);
+        bytes memory sig = signBid(winningBid);
+        
+        return abi.encodeWithSelector(
+            this.settleAuctionCallback.selector, 
+            winningBid,
+            sig
+        );
+    }
+
     function checkSufficientFundsLocked(
         address pool, 
         bytes32 poolId,
@@ -149,20 +169,14 @@ contract Auction is SuaveContract {
         return boolRes;
     }
 
-    function ethCall(string memory callParam) public view returns (bytes memory) {
-        bytes memory body = abi.encodePacked(
-            '{"jsonrpc":"2.0","method":"eth_call","params":[', 
-            callParam, ', "latest"'
-            '],"id":1}'
-        );
-        Suave.HttpRequest memory request;
-        request.method = "POST";
-        request.body = body;
-        request.headers = new string[](1);
-        request.headers[0] = "Content-Type: application/json";
-        request.withFlashbotsSignature = false;
-        request.url = settlementChainRpc;
-        return doHttpRequest(request);
+    // todo: what are the implication of reorgs for this?
+    function checkForValidSettlement(uint targetSlot, uint targetBlockNum) public view {
+        uint blockNum2Behind = slotToBlockNumber(targetSlot-2);
+        require(targetBlockNum == blockNum2Behind + 2, "Slot <> Block mismatch");
+        uint targetSlotStartTime = timestampForSlot(targetSlot);
+        console.log(targetSlotStartTime);
+        console.log(block.timestamp);
+        require(block.timestamp >= targetSlotStartTime-1, "Settlement too early");
     }
 
     function slotToBlockNumber(uint slot) public view returns (uint64) {
@@ -186,55 +200,6 @@ contract Auction is SuaveContract {
         return uint64(blockNum);
     }
 
-    function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
-        (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
-        crequire(success, string(data));
-        return abi.decode(data, (bytes));
-    }
-
-    function settleAuction(
-        address pool, 
-        bytes32 poolId, 
-        uint64 blockNumber, 
-        uint nextSlot
-    ) public returns (bytes memory) {
-        if (settlementTimeGuardEnabled)
-            checkForValidSettlement(nextSlot, blockNumber);
-
-        Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
-        (Bid memory winningBid) = bids.length == 0
-            ? Bid(pool, poolId, blockNumber, address(0), 0)
-            : findWinningBid(bids);
-        bytes memory sig = signBid(winningBid);
-        
-        return abi.encodeWithSelector(
-            this.settleAuctionCallback.selector, 
-            winningBid,
-            sig
-        );
-    }
-
-    // todo: what are the implication of reorgs for this?
-    function checkForValidSettlement(uint targetSlot, uint targetBlockNum) public view {
-        uint blockNum2Behind = slotToBlockNumber(targetSlot-2);
-        require(targetBlockNum == blockNum2Behind + 2, "Slot <> Block mismatch");
-        uint targetSlotStartTime = timestampForSlot(targetSlot);
-        console.log(targetSlotStartTime);
-        console.log(block.timestamp);
-        require(block.timestamp >= targetSlotStartTime-1, "Settlement too early");
-
-    }
-
-    function timestampForSlot(uint slot) public pure returns (uint) {
-        return BEACON_MAINNET_GENISIS_TIME + slot * 12;
-    }
-
-    function signBid(Bid memory bid) public returns (bytes memory sig) {
-        string memory pk = retreivePK();
-        bytes32 digest = keccak256(abi.encode(bid));
-        sig = Suave.signMessage(abi.encodePacked(digest), Suave.CryptoSignature.SECP256, pk);
-    }
-
     function findWinningBid(Bid[] memory bids) internal pure returns (Bid memory bestBid) {
         uint scndBestBidAmount;
         for (uint i = 0; i < bids.length; i++) {
@@ -251,6 +216,34 @@ contract Auction is SuaveContract {
             scndBestBidAmount = bestBid.bidAmount;
         }
         bestBid.bidAmount = scndBestBidAmount;
+    }
+
+    function ethCall(string memory callParam) public view returns (bytes memory) {
+        bytes memory body = abi.encodePacked(
+            '{"jsonrpc":"2.0","method":"eth_call","params":[', 
+            callParam, ', "latest"'
+            '],"id":1}'
+        );
+        Suave.HttpRequest memory request;
+        request.method = "POST";
+        request.body = body;
+        request.headers = new string[](1);
+        request.headers[0] = "Content-Type: application/json";
+        request.withFlashbotsSignature = false;
+        request.url = settlementChainRpc;
+        return doHttpRequest(request);
+    }
+
+    function doHttpRequest(Suave.HttpRequest memory request) internal view returns (bytes memory) {
+        (bool success, bytes memory data) = Suave.DO_HTTPREQUEST.staticcall(abi.encode(request));
+        crequire(success, string(data));
+        return abi.decode(data, (bytes));
+    }
+
+    function signBid(Bid memory bid) public returns (bytes memory sig) {
+        string memory pk = retreivePK();
+        bytes32 digest = keccak256(abi.encode(bid));
+        sig = Suave.signMessage(abi.encodePacked(digest), Suave.CryptoSignature.SECP256, pk);
     }
 
     function storeBid(Bid memory bid) internal {
@@ -292,6 +285,10 @@ contract Auction is SuaveContract {
     function retreivePK() internal returns (string memory) {
         bytes memory pkBytes =  Suave.confidentialRetrieve(pkBidId, PK_NAMESPACE);
         return string(pkBytes);
+    }
+
+    function timestampForSlot(uint slot) public pure returns (uint) {
+        return BEACON_MAINNET_GENISIS_TIME + slot * 12;
     }
 
 }
