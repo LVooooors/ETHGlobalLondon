@@ -4,7 +4,6 @@ import "./lib/SuaveContract.sol";
 import "lib/solady/src/utils/LibString.sol";
 import "lib/solady/src/utils/JSONParserLib.sol";
 
-import "../lib/forge-std/src/Test.sol"; // todo: rm for prod
 
 contract Auction is SuaveContract {
     using JSONParserLib for *;
@@ -41,16 +40,20 @@ contract Auction is SuaveContract {
     string constant BID_NAMESPACE = "auction:v0:bids";
     address public immutable registry;
     string public settlementChainRpc;
+    string public beaconBaseUrl;
     address public internalWallet;
     uint64 public lastAuctionBlock;
     bool public isInitialized;
     Suave.DataId internal pkBidId;
     address[] public genericPeekers = [0xC8df3686b4Afb2BB53e60EAe97EF043FE03Fb829]; // todo: rm after new update (this exposes to anyone)
-    uint maxSettledAuctionBlock;
+    bool public settlementTimeGuardEnabled;
 
     // ⛓️ EVM Methods
 
-    constructor(address _registry, string memory _settlementChainRpc) {
+    constructor(
+        address _registry, 
+        string memory _settlementChainRpc
+    ) {
         settlementChainRpc = _settlementChainRpc;
         registry = _registry;
     }
@@ -72,7 +75,6 @@ contract Auction is SuaveContract {
 
     // todo: protect it
     function settleAuctionCallback(Bid memory winningBid, bytes memory sig) public {
-        maxSettledAuctionBlock = winningBid.blockNumber;
         emit AuctionSettled(
             winningBid.pool,
             winningBid.poolId, 
@@ -83,11 +85,15 @@ contract Auction is SuaveContract {
         );
     }
 
+    function setBeaconBaseUrl(string memory _beaconBaseUrl) public {
+        beaconBaseUrl = _beaconBaseUrl;
+        settlementTimeGuardEnabled = true;
+    }
+
     // 🤐 MEVM Methods
 
     function confidentialConstructor() external returns (bytes memory) {
         crequire(!isInitialized, "Already initialized");
-
         string memory pk = Suave.privateKeyGen(Suave.CryptoSignature.SECP256);
         address pkAddress = getAddressForPk(pk);
 		Suave.DataId bidId = storePK(bytes(pk));
@@ -107,7 +113,7 @@ contract Auction is SuaveContract {
     ) public returns (bytes memory) {
         address bidder = msg.sender;
         require(bidAmount > 0, "Bid amount should be greater than zero");
-        // require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
+        require(checkSufficientFundsLocked(pool, poolId, bidder, bidAmount), "Insufficient funds locked");
         storeBid(Bid(pool, poolId, blockNumber, bidder, bidAmount));
 
         return abi.encodeWithSelector(
@@ -138,7 +144,7 @@ contract Auction is SuaveContract {
 
         JSONParserLib.Item memory parsedRes = string(response).parse();
         string memory result = string(parsedRes.at('"result"').value());
-        bool boolRes = LibString.endsWith(result, '1"'); // todo there is a better way
+        bool boolRes = LibString.endsWith(result, '1"');
 
         return boolRes;
     }
@@ -160,7 +166,6 @@ contract Auction is SuaveContract {
     }
 
     function slotToBlockNumber(uint slot) public view returns (uint64) {
-        string memory beaconBaseUrl = "https://docs-demo.quiknode.pro/eth/v2/beacon/blocks/";
         string memory url = string(abi.encodePacked(beaconBaseUrl, LibString.toString(slot)));
         Suave.HttpRequest memory request;
         request.method = "GET";
@@ -170,7 +175,13 @@ contract Auction is SuaveContract {
         request.headers[0] = "Content-Type: application/json";
         bytes memory response = doHttpRequest(request);
         JSONParserLib.Item memory parsedRes = string(response).parse();
-        string memory blockNumber = string(parsedRes.at('"data"').at('"message"').at('"body"').at('"execution_payload"').at('"block_number"').value());
+        string memory blockNumber = parsedRes
+            .at('"data"')
+            .at('"message"')
+            .at('"body"')
+            .at('"execution_payload"')
+            .at('"block_number"')
+            .value();
         uint blockNum = JSONParserLib.parseUint(trimStrEdges(blockNumber));
         return uint64(blockNum);
     }
@@ -181,13 +192,19 @@ contract Auction is SuaveContract {
         return abi.decode(data, (bytes));
     }
 
-    function settleAuction(address pool, bytes32 poolId, uint64 blockNumber, uint nextSlot) public returns (bytes memory) {
-        // checkForValidSettlement(nextSlot, blockNumber);
+    function settleAuction(
+        address pool, 
+        bytes32 poolId, 
+        uint64 blockNumber, 
+        uint nextSlot
+    ) public returns (bytes memory) {
+        if (settlementTimeGuardEnabled)
+            checkForValidSettlement(nextSlot, blockNumber);
+
         Bid[] memory bids = fetchBids(pool, poolId, blockNumber);
         (Bid memory winningBid) = bids.length == 0
             ? Bid(pool, poolId, blockNumber, address(0), 0)
             : findWinningBid(bids);
-
         bytes memory sig = signBid(winningBid);
         
         return abi.encodeWithSelector(
@@ -197,12 +214,15 @@ contract Auction is SuaveContract {
         );
     }
 
-    function checkForValidSettlement(uint nextSlot, uint settlementBlock) internal view {
-        require(settlementBlock > maxSettledAuctionBlock);
-        uint nextBlockNum = slotToBlockNumber(nextSlot);
-        require(nextBlockNum == settlementBlock, "Wrong slot");
-        uint nextSlotTimestamp = timestampForSlot(nextSlot);
-        require(block.timestamp < nextSlotTimestamp-10, "Slot not closed yet");
+    // todo: what are the implication of reorgs for this?
+    function checkForValidSettlement(uint targetSlot, uint targetBlockNum) public view {
+        uint blockNum2Behind = slotToBlockNumber(targetSlot-2);
+        require(targetBlockNum == blockNum2Behind + 2, "Slot <> Block mismatch");
+        uint targetSlotStartTime = timestampForSlot(targetSlot);
+        console.log(targetSlotStartTime);
+        console.log(block.timestamp);
+        require(block.timestamp >= targetSlotStartTime-1, "Settlement too early");
+
     }
 
     function timestampForSlot(uint slot) public pure returns (uint) {
