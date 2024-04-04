@@ -144,7 +144,7 @@ contract BidRegistry {
         PoolKey memory key = createPoolKey(t0, t1);
         
         uint256 amountToEnrich = escrow[v4Contract][id][user].amountSpent;
-        IUniswapV4(v4Contract).donate(key, amountToEnrich, 0, new bytes(0));
+        IUniswapV4(v4Contract).donate(key, amountToEnrich, 0, new bytes(0)); // TODO: Move funds first
 
         escrow[v4Contract][id][user].amount -= escrow[v4Contract][id][user].amountSpent;
         escrow[v4Contract][id][user].amountSpent = 0;
